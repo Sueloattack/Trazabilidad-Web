@@ -22,7 +22,7 @@ class DataModel {
         // Aseguramos que seleccionamos fg.id y usamos el mismo JOIN
         $sql = "
             SELECT
-                fg.id, -- Importante para la clave única de la fila y el futuro resaltado
+                fg.id, 
                 fg.serie,
                 fg.docn,
                 fg.nit_tercero,
@@ -31,8 +31,8 @@ class DataModel {
                 fg.cuenta_cobro,
                 fg.fecha_resp
             FROM factura_glosas fg
-            INNER JOIN envio_glosas eg ON fg.id = eg.id_facturaglosas -- Ajusta este JOIN si la relación es otra
-            ORDER BY fg.serie, fg.docn -- O el orden que prefieras por defecto
+            INNER JOIN envio_glosas eg ON fg.id = eg.id_facturaglosas 
+            ORDER BY fg.serie, fg.docn 
             LIMIT :limit OFFSET :offset
             ";
 

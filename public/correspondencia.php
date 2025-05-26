@@ -97,7 +97,7 @@
                 if (!response.ok) {
                     throw new Error('Error en la red o respuesta no OK: ' + response.statusText);
                 }
-                return response.json(); // Esperamos una respuesta JSON
+                return response.json(); 
             })
             .then(data => {
                 spinnerFactura.style.display = 'none'; 
