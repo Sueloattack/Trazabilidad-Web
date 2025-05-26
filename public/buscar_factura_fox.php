@@ -7,7 +7,8 @@ $default_datos = [
     'nit' => '',
     'tipo_glosa' => '',
     'gl_docn' => null,
-    'descripcion_glosa' => ''
+    'descripcion_glosa' => '',
+    'estado_consolidado' => ''
 ];
 
 $response = ['success' => false, 'message' => 'Error desconocido.', 'datos' => $default_datos];
@@ -54,23 +55,53 @@ try {
         $stmtFox->closeCursor();
 
         if ($resultados && count($resultados) > 0) {
-            // Ordenar todos por fecha descendente y tomar el más reciente, sin importar tipo
+            // Ordenar por fecha descendente y tomar el más reciente
             usort($resultados, fn($a, $b) => strtotime($b['gl_fecha']) <=> strtotime($a['gl_fecha']));
             $resultadoFinal = $resultados[0];
+
+            $glDocn = $resultadoFinal['gl_docn'] ?? null;
+            $estadoConsolidado = 'R2'; // Valor por defecto
+
+            if ($glDocn !== null) {
+                $sqlDet = "SELECT estatus1 FROM glo_det WHERE gl_docn = ?";
+                $stmtDet = $pdoFox->prepare($sqlDet);
+                $stmtDet->bindValue(1, $glDocn, PDO::PARAM_INT);
+                $stmtDet->execute();
+                $estados = $stmtDet->fetchAll(PDO::FETCH_COLUMN);
+                $stmtDet->closeCursor();
+
+                if ($estados) {
+                    $estadosUnicos = array_unique($estados);
+                    if (in_array('CO', $estadosUnicos) || in_array('R3', $estadosUnicos)) {
+                        $estadoConsolidado = 'CO';
+                    } elseif (in_array('C2', $estadosUnicos) || in_array('R2', $estadosUnicos)) {
+                        $estadoConsolidado = 'R3';
+                    } elseif (in_array('NU', $estadosUnicos) || in_array('C1', $estadosUnicos)) {
+                        $estadoConsolidado = 'R2';
+                    }
+                }
+            }
 
             $response['success'] = true;
             $response['message'] = 'Datos encontrados.';
             $response['datos'] = [
                 'nit' => $resultadoFinal['tercero'] ?? '',
                 'tipo_glosa' => $resultadoFinal['tipo'] ?? '',
-                'gl_docn' => $resultadoFinal['gl_docn'] ?? null,
-                'descripcion_glosa' => $resultadoFinal['nom_tipo'] ?? ''
+                'gl_docn' => $glDocn,
+                'descripcion_glosa' => $resultadoFinal['nom_tipo'] ?? '',
+                'estado_consolidado' => $estadoConsolidado
             ];
         } else {
+            // Factura no existe → tipo_glosa = NU, estado_consolidado = NU
             $response['success'] = false;
             $response['message'] = 'Factura no encontrada en FoxPro.';
-            $response['datos']['tipo_glosa'] = 'NU';
-            $response['datos']['descripcion_glosa'] = 'Nueva factura';
+            $response['datos'] = [
+                'tipo_glosa' => 'NU',
+                'descripcion_glosa' => 'Nueva factura',
+                'estado_consolidado' => 'NU',
+                'nit' => '',
+                'gl_docn' => null
+            ];
         }
 
     } else {
@@ -91,4 +122,3 @@ try {
 }
 
 echo json_encode($response);
-?>

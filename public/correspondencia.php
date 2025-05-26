@@ -53,6 +53,11 @@
                 <input type="text" id="descripcion_glosa" name="descripcion_glosa" value="" disabled>
             </div>
 
+            <div class="form-group">
+                <label for="estado_consolidado">Estado actual:</label>
+                <input type="text" id="estado_consolidado" name="estado_consolidado" value="" disabled>
+            </div>
+
             <div class="form-actions">
                 <button type="submit">Guardar</button>
             </div>
@@ -67,6 +72,7 @@
         const nitInput = document.getElementById('NIT');
         const tipoGlosaInput = document.getElementById('tipo_glosa');
         const descripcionGlosaInput = document.getElementById('descripcion_glosa');
+        const estadoConsolidadoInput = document.getElementById('estado_consolidado');
         const spinnerFactura = document.getElementById('spinnerFactura');
         let debounceTimer;
 
@@ -105,10 +111,12 @@
                     nitInput.value = data.datos.nit || ''; 
                     tipoGlosaInput.value = data.datos.tipo_glosa || ''; 
                     descripcionGlosaInput.value = data.datos.descripcion_glosa || ''; 
+                    estadoConsolidadoInput.value = data.datos.estado_consolidado || '';
                 } else {
                     nitInput.value = '';
                     tipoGlosaInput.value = '';
                     descripcionGlosaInput.value = '';
+                    estadoConsolidadoInput.value = '';
                     console.error('La respuesta del servidor no contiene la estructura esperada (data.datos).', data);
                 }
                 if (data.success) {
@@ -123,6 +131,7 @@
                 nitInput.value = ''; // Limpiar en caso de error
                 tipoGlosaInput.value = '';
                 descripcionGlosaInput.value = '';
+                estadoConsolidadoInput.value = '';
             });
         }
 
