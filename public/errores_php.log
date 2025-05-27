@@ -1,0 +1,224 @@
+[2025-05-27 16:19:40] --- INICIO DE PETICIÓN ---
+[2025-05-27 16:19:40] PARAMETROS_RECIBIDOS: Serie='FCR', Numero_Factura_Str='95'
+[2025-05-27 16:19:40] CONEXION_FOXPRO: Establecida correctamente.
+[2025-05-27 16:19:40] SQL_GLOCAB: SELECT tercero, tipo, nom_tipo, gl_docn, gl_fecha, tot_glosa, acep_ips 
+                   FROM glo_cab 
+                   WHERE fc_serie = ? AND fc_docn = ? con Serie='FCR', Numero_Factura=95
+[2025-05-27 16:19:40] RESULTADOS_GLOCAB: Vacío
+[2025-05-27 16:19:40] INFO: Factura no encontrada en GLO_CAB. Serie='FCR', Numero=95. Respondiendo NU.
+[2025-05-27 16:19:44] --- INICIO DE PETICIÓN ---
+[2025-05-27 16:19:44] PARAMETROS_RECIBIDOS: Serie='FCR', Numero_Factura_Str='732120'
+[2025-05-27 16:19:44] CONEXION_FOXPRO: Establecida correctamente.
+[2025-05-27 16:19:44] SQL_GLOCAB: SELECT tercero, tipo, nom_tipo, gl_docn, gl_fecha, tot_glosa, acep_ips 
+                   FROM glo_cab 
+                   WHERE fc_serie = ? AND fc_docn = ? con Serie='FCR', Numero_Factura=732120
+[2025-05-27 16:19:44] RESULTADOS_GLOCAB: 3 registros encontrados.
+[2025-05-27 16:19:44] GLOCAB_ACTUAL (registro más reciente): Array
+(
+    [tercero] => 901037916
+    [tipo] => GP
+    [nom_tipo] => GLOSA PARCIAL  
+    [gl_docn] => 96565
+    [gl_fecha] => 2022-06-26
+    [tot_glosa] => 6265800
+    [acep_ips] => 0
+)
+
+[2025-05-27 16:19:44] DATOS_DE_GLOCAB_ACTUAL: NIT='901037916', TipoGeneral='GP', GlDocn=96565
+[2025-05-27 16:19:44] VALORES_PARA_AI_DESDE_GLOCAB (¡RECONFIRMAR FUENTE!): tot_glosa=6265800.0, acep_ips=0.0
+[2025-05-27 16:19:44] SQL_GLODET: SELECT estatus1 FROM glo_det WHERE gl_docn = ? con GlDocn=96565
+[2025-05-27 16:19:44] RESULTADOS_GLODET (estatus1): NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, R2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2, C2
+[2025-05-27 16:19:44] ESTATUS_UNICOS_GLODET: NU, C1, R2, C2
+[2025-05-27 16:19:44] $tiene_glosa_AI_en_detalle: NO
+[2025-05-27 16:19:44] ESTADO_CONSOLIDADO (después de lógica GLO_DET): R3
+[2025-05-27 16:19:44] RESPUESTA_FINAL_NORMAL: Enviando datos. NIT='901037916', TipoGlosaGeneral='GP', DescripcionRespuesta='GLOSA PARCIAL', EstadoConsolidado='R3'
+[2025-05-27 16:22:17] --- INICIO DE PETICIÓN ---
+[2025-05-27 16:22:17] PARAMETROS_RECIBIDOS: Serie='FECR', Numero_Factura_Str='732120'
+[2025-05-27 16:22:17] CONEXION_FOXPRO: Establecida correctamente.
+[2025-05-27 16:22:17] SQL_GLOCAB: SELECT tercero, tipo, nom_tipo, gl_docn, gl_fecha, tot_glosa, acep_ips 
+                   FROM glo_cab 
+                   WHERE fc_serie = ? AND fc_docn = ? con Serie='FECR', Numero_Factura=732120
+[2025-05-27 16:22:17] RESULTADOS_GLOCAB: Vacío
+[2025-05-27 16:22:17] INFO: Factura no encontrada en GLO_CAB. Serie='FECR', Numero=732120. Respondiendo NU.
+[2025-05-27 16:22:20] --- INICIO DE PETICIÓN ---
+[2025-05-27 16:22:20] PARAMETROS_RECIBIDOS: Serie='FECR', Numero_Factura_Str='267'
+[2025-05-27 16:22:20] CONEXION_FOXPRO: Establecida correctamente.
+[2025-05-27 16:22:20] SQL_GLOCAB: SELECT tercero, tipo, nom_tipo, gl_docn, gl_fecha, tot_glosa, acep_ips 
+                   FROM glo_cab 
+                   WHERE fc_serie = ? AND fc_docn = ? con Serie='FECR', Numero_Factura=267
+[2025-05-27 16:22:20] RESULTADOS_GLOCAB: Vacío
+[2025-05-27 16:22:20] INFO: Factura no encontrada en GLO_CAB. Serie='FECR', Numero=267. Respondiendo NU.
+[2025-05-27 16:22:25] --- INICIO DE PETICIÓN ---
+[2025-05-27 16:22:25] PARAMETROS_RECIBIDOS: Serie='FECR', Numero_Factura_Str='267058'
+[2025-05-27 16:22:25] CONEXION_FOXPRO: Establecida correctamente.
+[2025-05-27 16:22:25] SQL_GLOCAB: SELECT tercero, tipo, nom_tipo, gl_docn, gl_fecha, tot_glosa, acep_ips 
+                   FROM glo_cab 
+                   WHERE fc_serie = ? AND fc_docn = ? con Serie='FECR', Numero_Factura=267058
+[2025-05-27 16:22:25] RESULTADOS_GLOCAB: 1 registros encontrados.
+[2025-05-27 16:22:25] GLOCAB_ACTUAL (registro más reciente): Array
+(
+    [tercero] => 830003564
+    [tipo] => GP
+    [nom_tipo] => GLOSA PARCIAL  
+    [gl_docn] => 133564
+    [gl_fecha] => 2024-05-21
+    [tot_glosa] => 12452808
+    [acep_ips] => 2458311
+)
+
+[2025-05-27 16:22:25] DATOS_DE_GLOCAB_ACTUAL: NIT='830003564', TipoGeneral='GP', GlDocn=133564
+[2025-05-27 16:22:25] VALORES_PARA_AI_DESDE_GLOCAB (¡RECONFIRMAR FUENTE!): tot_glosa=12452808.0, acep_ips=2458311.0
+[2025-05-27 16:22:25] SQL_GLODET: SELECT estatus1 FROM glo_det WHERE gl_docn = ? con GlDocn=133564
+[2025-05-27 16:22:25] RESULTADOS_GLODET (estatus1): NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, NU, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, C1, CO, AE, CO, AE, CO, AE, CO, AE, CO, CO, AE, CO, AE, CO, AE, CO, CO, AE, CO, AE, CO, AE, CO, AE, CO, AE, CO, AE, CO, AE, CO, CO, CO, AE, CO, AE, CO, CO, AE, CO, AE, CO, AE, CO, CO, CO, CO, CO, CO, CO, AI, CO, AI, CO, AI, CO, AI, AE, CO, AE, CO, AE, CO, CO, CO, AI, CO, AE, CO, CO, AE, CO, AE, CO, AE, CO, CO, CO, AE, CO, CO, CO, AE, CO, AE, CO, AE, CO, AE, CO, CO, AE, CO, AE, CO, CO, AE, CO, CO, AE, CO, CO, AE, CO, AE, CO, AE, CO, AE, CO, AE, CO, AE, CO, CO, AE, CO, AE, CO, CO, AE, CO, AE, CO, AE, CO, AE, CO, CO, AE, CO, AE, CO, AE, CO, AE, CO, AE, CO, AE, CO, CO, CO, AE, CO, AE, CO, CO, AE, CO, AE, CO, AE, CO, CO, AE, CO, AE, CO, CO, AE, CO, CO, CO, AE, CO, AE, CO, CO, AE, CO, AE, CO, AE, CO, AE, CO, AE, CO, AE, CO, AE, CO, CO, AE, CO, AE, CO, CO, CO, AE, CO, CO, AE, CO, CO, CO, AE, CO, AE, CO, AE, CO, AE, CO, AE, CO, AE, CO, CO, AE, CO, AE, CO, AE, CO, CO, AE, CO, CO, AE, CO, AE, CO, CO, AE, CO, CO, CO, CO, AE, CO, AE, CO, AE, CO, AE, CO, AE, CO, AE, CO, CO, CO, CO, CO, CO, CO, CO, CO, CO, CO, CO, CO, AE, CO, CO, AE, CO, AE, CO, CO, AE, CO, AE, CO, AE, CO, AE, CO, AE, CO, AE, CO, AE, CO, AE, CO, AE, CO, AE, CO, AE, CO, AE, CO, AE, CO, AE, CO, CO, CO, AE, CO, AE, CO, CO, AE, CO, CO, CO, AE
+[2025-05-27 16:22:25] ESTATUS_UNICOS_GLODET: NU, C1, CO, AE, AI
+[2025-05-27 16:22:25] $tiene_glosa_AI_en_detalle: SÍ
+[2025-05-27 16:22:25] ESTADO_CONSOLIDADO (después de lógica GLO_DET): CO
+[2025-05-27 16:22:25] VERIFICACION_AI: Detectado AI en detalle. Verificando si está cobrada.
+[2025-05-27 16:22:25] VERIFICACION_AI: Usando tot_glosa=12452808.0 y acep_ips=2458311.0 (¡RECONFIRMAR FUENTE DE ESTOS VALORES!)
+[2025-05-27 16:22:25] VERIFICACION_AI: CONDICIÓN COBRADA NO CUMPLIDA. Totales no son iguales, o uno es nulo, o ambos son nulos.
+[2025-05-27 16:22:25] RESPUESTA_FINAL_NORMAL: Enviando datos. NIT='830003564', TipoGlosaGeneral='GP', DescripcionRespuesta='GLOSA PARCIAL', EstadoConsolidado='CO'
+[2025-05-27 18:19:33] --- INICIO DE PETICIÓN ---
+[2025-05-27 18:19:33] PARAMETROS_RECIBIDOS: Serie='FECR', Numero_Factura_Str='205473'
+[2025-05-27 18:19:33] CONEXION_FOXPRO: Establecida correctamente.
+[2025-05-27 18:19:33] SQL_GLOCAB: SELECT tercero, tipo, nom_tipo, gl_docn, gl_fecha, tot_glosa, acep_ips 
+                   FROM glo_cab 
+                   WHERE fc_serie = ? AND fc_docn = ? con Serie='FECR', Numero_Factura=205473
+[2025-05-27 18:19:33] RESULTADOS_GLOCAB: 1 registros encontrados.
+[2025-05-27 18:19:33] GLOCAB_ACTUAL (registro más reciente): Array
+(
+    [tercero] => 800106339
+    [tipo] => GP
+    [nom_tipo] => GLOSA PARCIAL  
+    [gl_docn] => 119095
+    [gl_fecha] => 2023-08-15
+    [tot_glosa] => 4107
+    [acep_ips] => 4107
+)
+
+[2025-05-27 18:19:33] DATOS_DE_GLOCAB_ACTUAL: NIT='800106339', TipoGeneral='GP', GlDocn=119095
+[2025-05-27 18:19:33] VALORES_PARA_AI_DESDE_GLOCAB (¡RECONFIRMAR FUENTE!): tot_glosa=4107.0, acep_ips=4107.0
+[2025-05-27 18:19:33] SQL_GLODET: SELECT estatus1 FROM glo_det WHERE gl_docn = ? con GlDocn=119095
+[2025-05-27 18:19:33] RESULTADOS_GLODET (estatus1): NU, AI
+[2025-05-27 18:19:33] ESTATUS_UNICOS_GLODET: NU, AI
+[2025-05-27 18:19:33] $tiene_glosa_AI_en_detalle: SÍ
+[2025-05-27 18:19:33] ESTADO_CONSOLIDADO (después de lógica GLO_DET): R2
+[2025-05-27 18:19:33] VERIFICACION_AI: Detectado AI en detalle. Verificando si está cobrada.
+[2025-05-27 18:19:33] VERIFICACION_AI: Usando tot_glosa=4107.0 y acep_ips=4107.0 (¡RECONFIRMAR FUENTE DE ESTOS VALORES!)
+[2025-05-27 18:19:33] VERIFICACION_AI: CONDICIÓN COBRADA CUMPLIDA. Enviando respuesta factura_cobrada.
+[2025-05-27 18:22:06] --- INICIO DE PETICIÓN ---
+[2025-05-27 18:22:06] PARAMETROS_RECIBIDOS: Serie='FECR', Numero_Factura_Str='198518'
+[2025-05-27 18:22:06] CONEXION_FOXPRO: Establecida correctamente.
+[2025-05-27 18:22:06] SQL_GLOCAB: SELECT tercero, tipo, nom_tipo, gl_docn, gl_fecha, tot_glosa, acep_ips 
+                   FROM glo_cab 
+                   WHERE fc_serie = ? AND fc_docn = ? con Serie='FECR', Numero_Factura=198518
+[2025-05-27 18:22:06] RESULTADOS_GLOCAB: 1 registros encontrados.
+[2025-05-27 18:22:06] GLOCAB_ACTUAL (registro más reciente): Array
+(
+    [tercero] => 900033371
+    [tipo] => GP
+    [nom_tipo] => GLOSA PARCIAL  
+    [gl_docn] => 120586
+    [gl_fecha] => 2023-09-13
+    [tot_glosa] => 160250
+    [acep_ips] => 160250
+)
+
+[2025-05-27 18:22:06] DATOS_DE_GLOCAB_ACTUAL: NIT='900033371', TipoGeneral='GP', GlDocn=120586
+[2025-05-27 18:22:06] VALORES_PARA_AI_DESDE_GLOCAB (¡RECONFIRMAR FUENTE!): tot_glosa=160250.0, acep_ips=160250.0
+[2025-05-27 18:22:06] SQL_GLODET: SELECT estatus1 FROM glo_det WHERE gl_docn = ? con GlDocn=120586
+[2025-05-27 18:22:06] RESULTADOS_GLODET (estatus1): NU, NU, NU, C1, C1, C1, CO, AI, CO, AI, CO, AI
+[2025-05-27 18:22:06] ESTATUS_UNICOS_GLODET: NU, C1, CO, AI
+[2025-05-27 18:22:06] $tiene_glosa_AI_en_detalle: SÍ
+[2025-05-27 18:22:06] ESTADO_CONSOLIDADO (después de lógica GLO_DET): CO
+[2025-05-27 18:22:06] VERIFICACION_AI: Detectado AI en detalle. Verificando si está cobrada.
+[2025-05-27 18:22:06] VERIFICACION_AI: Usando tot_glosa=160250.0 y acep_ips=160250.0 (¡RECONFIRMAR FUENTE DE ESTOS VALORES!)
+[2025-05-27 18:22:06] VERIFICACION_AI: CONDICIÓN COBRADA CUMPLIDA. Enviando respuesta factura_cobrada.
+[2025-05-27 18:23:03] --- INICIO DE PETICIÓN ---
+[2025-05-27 18:23:03] PARAMETROS_RECIBIDOS: Serie='FECR', Numero_Factura_Str='214874'
+[2025-05-27 18:23:03] CONEXION_FOXPRO: Establecida correctamente.
+[2025-05-27 18:23:03] SQL_GLOCAB: SELECT tercero, tipo, nom_tipo, gl_docn, gl_fecha, tot_glosa, acep_ips 
+                   FROM glo_cab 
+                   WHERE fc_serie = ? AND fc_docn = ? con Serie='FECR', Numero_Factura=214874
+[2025-05-27 18:23:03] RESULTADOS_GLOCAB: 1 registros encontrados.
+[2025-05-27 18:23:03] GLOCAB_ACTUAL (registro más reciente): Array
+(
+    [tercero] => 860002184
+    [tipo] => GT
+    [nom_tipo] => GLOSA TOTAL    
+    [gl_docn] => 120751
+    [gl_fecha] => 2023-09-21
+    [tot_glosa] => 1279600
+    [acep_ips] => 1279600
+)
+
+[2025-05-27 18:23:03] DATOS_DE_GLOCAB_ACTUAL: NIT='860002184', TipoGeneral='GT', GlDocn=120751
+[2025-05-27 18:23:03] VALORES_PARA_AI_DESDE_GLOCAB (¡RECONFIRMAR FUENTE!): tot_glosa=1279600.0, acep_ips=1279600.0
+[2025-05-27 18:23:03] SQL_GLODET: SELECT estatus1 FROM glo_det WHERE gl_docn = ? con GlDocn=120751
+[2025-05-27 18:23:03] RESULTADOS_GLODET (estatus1): NU, AI
+[2025-05-27 18:23:03] ESTATUS_UNICOS_GLODET: NU, AI
+[2025-05-27 18:23:03] $tiene_glosa_AI_en_detalle: SÍ
+[2025-05-27 18:23:03] ESTADO_CONSOLIDADO (después de lógica GLO_DET): R2
+[2025-05-27 18:23:03] VERIFICACION_AI: Detectado AI en detalle. Verificando si está cobrada.
+[2025-05-27 18:23:03] VERIFICACION_AI: Usando tot_glosa=1279600.0 y acep_ips=1279600.0 (¡RECONFIRMAR FUENTE DE ESTOS VALORES!)
+[2025-05-27 18:23:03] VERIFICACION_AI: CONDICIÓN COBRADA CUMPLIDA. Enviando respuesta factura_cobrada.
+[2025-05-27 18:23:52] --- INICIO DE PETICIÓN ---
+[2025-05-27 18:23:52] PARAMETROS_RECIBIDOS: Serie='FECR', Numero_Factura_Str='324283'
+[2025-05-27 18:23:52] CONEXION_FOXPRO: Establecida correctamente.
+[2025-05-27 18:23:52] SQL_GLOCAB: SELECT tercero, tipo, nom_tipo, gl_docn, gl_fecha, tot_glosa, acep_ips 
+                   FROM glo_cab 
+                   WHERE fc_serie = ? AND fc_docn = ? con Serie='FECR', Numero_Factura=324283
+[2025-05-27 18:23:52] RESULTADOS_GLOCAB: Vacío
+[2025-05-27 18:23:52] INFO: Factura no encontrada en GLO_CAB. Serie='FECR', Numero=324283. Respondiendo NU.
+[2025-05-27 18:24:39] --- INICIO DE PETICIÓN ---
+[2025-05-27 18:24:39] PARAMETROS_RECIBIDOS: Serie='FECR', Numero_Factura_Str='323'
+[2025-05-27 18:24:39] CONEXION_FOXPRO: Establecida correctamente.
+[2025-05-27 18:24:39] SQL_GLOCAB: SELECT tercero, tipo, nom_tipo, gl_docn, gl_fecha, tot_glosa, acep_ips 
+                   FROM glo_cab 
+                   WHERE fc_serie = ? AND fc_docn = ? con Serie='FECR', Numero_Factura=323
+[2025-05-27 18:24:39] RESULTADOS_GLOCAB: Vacío
+[2025-05-27 18:24:39] INFO: Factura no encontrada en GLO_CAB. Serie='FECR', Numero=323. Respondiendo NU.
+[2025-05-27 18:24:41] --- INICIO DE PETICIÓN ---
+[2025-05-27 18:24:41] PARAMETROS_RECIBIDOS: Serie='FECR', Numero_Factura_Str='323447'
+[2025-05-27 18:24:41] CONEXION_FOXPRO: Establecida correctamente.
+[2025-05-27 18:24:41] SQL_GLOCAB: SELECT tercero, tipo, nom_tipo, gl_docn, gl_fecha, tot_glosa, acep_ips 
+                   FROM glo_cab 
+                   WHERE fc_serie = ? AND fc_docn = ? con Serie='FECR', Numero_Factura=323447
+[2025-05-27 18:24:41] RESULTADOS_GLOCAB: Vacío
+[2025-05-27 18:24:41] INFO: Factura no encontrada en GLO_CAB. Serie='FECR', Numero=323447. Respondiendo NU.
+[2025-05-27 18:25:10] --- INICIO DE PETICIÓN ---
+[2025-05-27 18:25:10] PARAMETROS_RECIBIDOS: Serie='FECR', Numero_Factura_Str='323447'
+[2025-05-27 18:25:10] CONEXION_FOXPRO: Establecida correctamente.
+[2025-05-27 18:25:10] SQL_GLOCAB: SELECT tercero, tipo, nom_tipo, gl_docn, gl_fecha, tot_glosa, acep_ips 
+                   FROM glo_cab 
+                   WHERE fc_serie = ? AND fc_docn = ? con Serie='FECR', Numero_Factura=323447
+[2025-05-27 18:25:10] RESULTADOS_GLOCAB: Vacío
+[2025-05-27 18:25:10] INFO: Factura no encontrada en GLO_CAB. Serie='FECR', Numero=323447. Respondiendo NU.
+[2025-05-27 18:28:10] --- INICIO DE PETICIÓN ---
+[2025-05-27 18:28:10] PARAMETROS_RECIBIDOS: Serie='COEX', Numero_Factura_Str='1048'
+[2025-05-27 18:28:10] CONEXION_FOXPRO: Establecida correctamente.
+[2025-05-27 18:28:10] SQL_GLOCAB: SELECT tercero, tipo, nom_tipo, gl_docn, gl_fecha, tot_glosa, acep_ips 
+                   FROM glo_cab 
+                   WHERE fc_serie = ? AND fc_docn = ? con Serie='COEX', Numero_Factura=1048
+[2025-05-27 18:28:10] RESULTADOS_GLOCAB: 1 registros encontrados.
+[2025-05-27 18:28:10] GLOCAB_ACTUAL (registro más reciente): Array
+(
+    [tercero] => 890903407
+    [tipo] => GT
+    [nom_tipo] => GLOSA TOTAL    
+    [gl_docn] => 147072
+    [gl_fecha] => 2024-11-12
+    [tot_glosa] => 217500
+    [acep_ips] => 67800
+)
+
+[2025-05-27 18:28:10] DATOS_DE_GLOCAB_ACTUAL: NIT='890903407', TipoGeneral='GT', GlDocn=147072
+[2025-05-27 18:28:10] VALORES_PARA_AI_DESDE_GLOCAB (¡RECONFIRMAR FUENTE!): tot_glosa=217500.0, acep_ips=67800.0
+[2025-05-27 18:28:10] SQL_GLODET: SELECT estatus1 FROM glo_det WHERE gl_docn = ? con GlDocn=147072
+[2025-05-27 18:28:10] RESULTADOS_GLODET (estatus1): NU, C1, CO, AI, AE
+[2025-05-27 18:28:10] ESTATUS_UNICOS_GLODET: NU, C1, CO, AI, AE
+[2025-05-27 18:28:10] $tiene_glosa_AI_en_detalle: SÍ
+[2025-05-27 18:28:10] ESTADO_CONSOLIDADO (después de lógica GLO_DET): CO
+[2025-05-27 18:28:10] VERIFICACION_AI: Detectado AI en detalle. Verificando si está cobrada.
+[2025-05-27 18:28:10] VERIFICACION_AI: Usando tot_glosa=217500.0 y acep_ips=67800.0 (¡RECONFIRMAR FUENTE DE ESTOS VALORES!)
+[2025-05-27 18:28:10] VERIFICACION_AI: CONDICIÓN COBRADA NO CUMPLIDA. Totales no son iguales, o uno es nulo, o ambos son nulos.
+[2025-05-27 18:28:10] RESPUESTA_FINAL_NORMAL: Enviando datos. NIT='890903407', TipoGlosaGeneral='GT', DescripcionRespuesta='GLOSA TOTAL', EstadoConsolidado='CO'
