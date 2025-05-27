@@ -1,18 +1,12 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/../config/conectFox.php'; // Asegúrate que la ruta es correcta
+require_once __DIR__ . '/../config/conectFox.php';
 
 header('Content-Type: application/json');
-define('LOG_FILE', __DIR__ . '/errores_php.log'); // Asegúrate que este archivo es escribible por el servidor web
+define('LOG_FILE', __DIR__ . '/errores_php.log');
 
 function log_this_error(string $message): void {
-    // Añadir un prefijo de ID de petición simple para agrupar logs de una misma ejecución podría ser útil para depuración compleja
-    // static $requestId = null;
-    // if ($requestId === null) {
-    //     $requestId = uniqid('req_', true);
-    // }
-    // error_log(date('[Y-m-d H:i:s] ') . "[{$requestId}] " . $message . PHP_EOL, 3, LOG_FILE);
     error_log(date('[Y-m-d H:i:s] ') . $message . PHP_EOL, 3, LOG_FILE);
 }
 
@@ -21,11 +15,10 @@ function send_json_response(array $data): void {
     exit;
 }
 
-log_this_error("--- INICIO DE PETICIÓN ---"); // Log para marcar el inicio de una nueva petición
+log_this_error("--- INICIO DE PETICIÓN ---");
 
 $response = ['success' => false, 'message' => 'Error desconocido en el servidor.'];
 
-// Validación de entrada
 if (!isset($_POST['serie']) || !isset($_POST['numero_factura'])) {
     $response['message'] = 'Faltan parámetros: serie o número de factura.';
     log_this_error("ERROR_VALIDACION: " . $response['message'] . " - POST Data: " . print_r($_POST, true));
@@ -35,7 +28,6 @@ if (!isset($_POST['serie']) || !isset($_POST['numero_factura'])) {
 $serie = strtoupper(trim((string)$_POST['serie']));
 $numero_factura_str = trim((string)$_POST['numero_factura']);
 log_this_error("PARAMETROS_RECIBIDOS: Serie='{$serie}', Numero_Factura_Str='{$numero_factura_str}'");
-
 
 if ($serie === '' || $numero_factura_str === '' || !is_numeric($numero_factura_str) || (int)$numero_factura_str <= 0) {
     $response['message'] = 'Valores inválidos para serie o número de factura.';
@@ -48,7 +40,6 @@ try {
     $pdoFox = ConnectionFox::con();
     log_this_error("CONEXION_FOXPRO: Establecida correctamente.");
 
-    // 1. Consultar GLO_CAB
     $sql_glocab = "SELECT tercero, tipo, nom_tipo, gl_docn, gl_fecha, tot_glosa, acep_ips 
                    FROM glo_cab 
                    WHERE fc_serie = ? AND fc_docn = ?";
@@ -61,7 +52,6 @@ try {
     $glocab_results = $stmt_glocab->fetchAll(PDO::FETCH_ASSOC);
     $stmt_glocab->closeCursor();
     log_this_error("RESULTADOS_GLOCAB: " . (empty($glocab_results) ? 'Vacío' : count($glocab_results) . ' registros encontrados.'));
-
 
     if (empty($glocab_results)) {
         log_this_error("INFO: Factura no encontrada en GLO_CAB. Serie='{$serie}', Numero={$numero_factura}. Respondiendo NU.");
@@ -85,7 +75,6 @@ try {
     $glocab_actual = $glocab_results[0];
     log_this_error("GLOCAB_ACTUAL (registro más reciente): " . print_r($glocab_actual, true));
 
-
     $nit_cab = trim((string)($glocab_actual['tercero'] ?? ''));
     $tipo_glosa_general_cab = trim((string)($glocab_actual['tipo'] ?? 'NU'));
     $descripcion_glosa_para_respuesta = trim((string)($glocab_actual['nom_tipo'] ?? 'N/A'));
@@ -94,16 +83,14 @@ try {
     if ($gl_docn_actual !== null) {
         $gl_docn_actual = (int)$gl_docn_actual;
     }
-    log_this_error("DATOS_DE_GLOCAB_ACTUAL: NIT='{$nit_cab}', TipoGeneral='{$tipo_glosa_general_cab}', GlDocn={$gl_docn_actual}");
-
+    log_this_error("DATOS_DE_GLOCAB_ACTUAL: NIT='{$nit_cab}', TipoGeneral='{$tipo_glosa_general_cab}', GlDocn=".var_export($gl_docn_actual, true));
 
     $tot_glosa_para_comparacion_ai = isset($glocab_actual['tot_glosa']) ? (float)$glocab_actual['tot_glosa'] : null;
     $acep_ips_para_comparacion_ai = isset($glocab_actual['acep_ips']) ? (float)$glocab_actual['acep_ips'] : null;
     log_this_error("VALORES_PARA_AI_DESDE_GLOCAB (¡RECONFIRMAR FUENTE!): tot_glosa=" . var_export($tot_glosa_para_comparacion_ai, true) . ", acep_ips=" . var_export($acep_ips_para_comparacion_ai, true));
 
-
     if ($gl_docn_actual === null) {
-        log_this_error("INFO: GLO_CAB encontrado, pero GL_DOCN es nulo. Serie='{$serie}', Numero={$numero_factura}. Respondiendo NU para estado consolidado.");
+        log_this_error("INFO: GLO_CAB encontrado, pero GL_DOCN es nulo. Respondiendo NU para estado consolidado.");
         send_json_response([
             'success' => true,
             'datos' => [
@@ -115,7 +102,6 @@ try {
         ]);
     }
 
-    // 2. Consultar GLO_DET
     $sql_glodet = "SELECT estatus1 FROM glo_det WHERE gl_docn = ?";
     log_this_error("SQL_GLODET: {$sql_glodet} con GlDocn={$gl_docn_actual}");
 
@@ -125,7 +111,6 @@ try {
     $glosas_detalle_estatus1_list = $stmt_glodet->fetchAll(PDO::FETCH_COLUMN, 0); 
     $stmt_glodet->closeCursor();
     log_this_error("RESULTADOS_GLODET (estatus1): " . (empty($glosas_detalle_estatus1_list) ? 'Vacío' : implode(', ', $glosas_detalle_estatus1_list)));
-
 
     $estado_consolidado_final = 'NU';
     $tiene_glosa_AI_en_detalle = false;
@@ -139,7 +124,6 @@ try {
         }
         log_this_error("\$tiene_glosa_AI_en_detalle: " . ($tiene_glosa_AI_en_detalle ? 'SÍ' : 'NO'));
 
-
         if (count(array_intersect(['CO', 'R3'], $estatus_en_detalle_unicos)) > 0) {
             $estado_consolidado_final = 'CO';
         } elseif (count(array_intersect(['C2', 'R2'], $estatus_en_detalle_unicos)) > 0) {
@@ -148,7 +132,6 @@ try {
             $estado_consolidado_final = 'R2';
         }
         log_this_error("ESTADO_CONSOLIDADO (después de lógica GLO_DET): {$estado_consolidado_final}");
-
     } else { 
         log_this_error("INFO: No hay registros en GLO_DET para GlDocn={$gl_docn_actual}.");
         if ($tipo_glosa_general_cab !== 'NU') { 
@@ -159,7 +142,18 @@ try {
         }
     }
 
-
+    // Preparamos la estructura de la respuesta final
+    $respuesta_final = [
+        'success' => true,
+        'message' => 'Datos de la factura encontrados.', // Mensaje por defecto
+        'datos' => [
+            'nit' => $nit_cab,
+            'tipo_glosa' => $tipo_glosa_general_cab, 
+            'descripcion_glosa' => $descripcion_glosa_para_respuesta, 
+            'estado_consolidado' => $estado_consolidado_final
+        ]
+    ];
+    
     // 3. Verificación ADICIONAL para AI si se encontró en GLO_DET
     if ($tiene_glosa_AI_en_detalle) {
         log_this_error("VERIFICACION_AI: Detectado AI en detalle. Verificando si está cobrada.");
@@ -169,29 +163,20 @@ try {
             $acep_ips_para_comparacion_ai !== null && 
             $tot_glosa_para_comparacion_ai == $acep_ips_para_comparacion_ai) {
             
-            log_this_error("VERIFICACION_AI: CONDICIÓN COBRADA CUMPLIDA. Enviando respuesta factura_cobrada.");
-            send_json_response([
-                'success' => true,
-                'factura_cobrada' => true,
-                'message' => 'Factura totalmente cobrada (AI detectado y totales coinciden).'
-            ]);
+            log_this_error("VERIFICACION_AI: CONDICIÓN COBRADA CUMPLIDA.");
+            // MODIFICACIÓN: En lugar de hacer send_json_response aquí,
+            // actualizamos la $respuesta_final para incluir la info de factura_cobrada.
+            $respuesta_final['factura_cobrada'] = true;
+            $respuesta_final['message'] = 'Factura totalmente cobrada (AI detectado y totales coinciden).';
         } else {
             log_this_error("VERIFICACION_AI: CONDICIÓN COBRADA NO CUMPLIDA. Totales no son iguales, o uno es nulo, o ambos son nulos.");
+            // No es necesario hacer nada aquí, la $respuesta_final ya está preparada sin factura_cobrada:true
         }
     }
 
-    // 4. Respuesta final normal
-    log_this_error("RESPUESTA_FINAL_NORMAL: Enviando datos. NIT='{$nit_cab}', TipoGlosaGeneral='{$tipo_glosa_general_cab}', DescripcionRespuesta='{$descripcion_glosa_para_respuesta}', EstadoConsolidado='{$estado_consolidado_final}'");
-    send_json_response([
-        'success' => true,
-        'message' => 'Datos de la factura encontrados.',
-        'datos' => [
-            'nit' => $nit_cab,
-            'tipo_glosa' => $tipo_glosa_general_cab, 
-            'descripcion_glosa' => $descripcion_glosa_para_respuesta, 
-            'estado_consolidado' => $estado_consolidado_final
-        ]
-    ]);
+    // 4. Enviar la respuesta final (que ahora puede o no tener 'factura_cobrada')
+    log_this_error("RESPUESTA_FINAL: " . print_r($respuesta_final, true));
+    send_json_response($respuesta_final);
 
 } catch (PDOException $e) {
     $currentStatementInfo = "";

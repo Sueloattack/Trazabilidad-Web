@@ -50,12 +50,12 @@
             </div>
 
             <div class="form-group">
-                <label for="tipo_glosa">Tipo de Glosa (Prioritario):</label>
+                <label for="tipo_glosa">Tipo de Glosa:</label> <!-- Cambiado de "Tipo de Glosa (Prioritario)" -->
                 <input type="text" id="tipo_glosa" name="tipo_glosa" value="" disabled>
             </div>
 
             <div class="form-group">
-                <label for="descripcion_glosa">Descripción(es) de la Glosa:</label>
+                <label for="descripcion_glosa">Descripción de la Glosa:</label> <!-- Cambiado de "Descripción(es) de la Glosa" -->
                 <input type="text" id="descripcion_glosa" name="descripcion_glosa" value="" disabled>
             </div>
 
@@ -65,7 +65,7 @@
             </div>
 
             <div class="form-actions">
-                <button type="submit">Guardar</button> <!-- Este botón es para el formulario, la búsqueda es automática -->
+                <button type="submit">Guardar</button>
             </div>
         </form>
         
@@ -73,6 +73,7 @@
     </div>
 
     <script>
+        // Asegúrate que estos IDs coincidan EXACTAMENTE con tu HTML
         const serieInput = document.getElementById('serie');
         const numeroFacturaInput = document.getElementById('numero_factura');
         const nitInput = document.getElementById('NIT');
@@ -83,7 +84,10 @@
         const mensajeUsuarioDiv = document.getElementById('mensajeUsuario');
         let debounceTimer;
 
+        console.log("Script de correspondencia.php cargado."); 
+
         function limpiarCamposResultado() {
+            console.log("Limpiando campos de resultado.");
             nitInput.value = '';
             tipoGlosaInput.value = '';
             descripcionGlosaInput.value = '';
@@ -91,113 +95,151 @@
         }
 
         function mostrarMensaje(tipo, mensaje) {
+            console.log(`Mostrando mensaje: ${tipo} - ${mensaje}`);
             mensajeUsuarioDiv.textContent = mensaje;
-            mensajeUsuarioDiv.className = ''; // Limpiar clases previas
-            mensajeUsuarioDiv.classList.add(tipo); // 'success', 'error', 'info'
+            mensajeUsuarioDiv.className = '';
+            mensajeUsuarioDiv.classList.add(tipo);
             mensajeUsuarioDiv.style.display = 'block';
         }
 
         function ocultarMensaje() {
+            console.log("Ocultando mensaje.");
             mensajeUsuarioDiv.style.display = 'none';
         }
 
+        function popularCamposConDatos(datosObjeto) {
+            console.log("Populando campos con datos:", datosObjeto);
+            if (datosObjeto) { // Asegura que datosObjeto no es null o undefined
+                nitInput.value = datosObjeto.nit || ''; 
+                tipoGlosaInput.value = datosObjeto.tipo_glosa || ''; 
+                descripcionGlosaInput.value = datosObjeto.descripcion_glosa || ''; 
+                estadoConsolidadoInput.value = datosObjeto.estado_consolidado || '';
+            } else {
+                console.warn("Intentando popular campos pero el objeto de datos es nulo/indefinido.");
+                limpiarCamposResultado(); // Si no hay datos, limpiar.
+            }
+        }
+
+
         function buscarDatosFactura() {
-            ocultarMensaje(); // Ocultar mensajes previos al iniciar una nueva búsqueda
+            ocultarMensaje();
             const serie = serieInput.value.trim();
             const numeroFactura = numeroFacturaInput.value.trim();
+            console.log(`Iniciando búsqueda para Serie: ${serie}, N° Factura: ${numeroFactura}`);
 
             if (serie === '' || numeroFactura === '') {
+                console.log("Serie o N° Factura vacíos, no se busca.");
                 limpiarCamposResultado();
-                // Podrías opcionalmente ocultar el spinner si estaba visible y no se hará petición
-                // spinnerFactura.style.display = 'none'; 
                 return;
             }
 
             spinnerFactura.style.display = 'inline-block';
-            limpiarCamposResultado(); // Limpiar antes de la nueva búsqueda
+            limpiarCamposResultado(); 
 
             const formData = new FormData();
             formData.append('serie', serie);
             formData.append('numero_factura', numeroFactura);
 
+            console.log("Enviando fetch a buscar_factura_fox.php");
             fetch('buscar_factura_fox.php', {
                 method: 'POST',
                 body: formData
             })
             .then(response => {
+                console.log("Respuesta recibida del fetch:", response);
                 if (!response.ok) {
-                    // Si es un error HTTP, intentar obtener texto para más contexto.
+                    console.error("Respuesta no OK:", response.status, response.statusText);
+                    // Intentar obtener el texto del error para más detalles
                     return response.text().then(text => {
-                        throw new Error(`Error de red o servidor: ${response.status} ${response.statusText}. Detalles: ${text}`);
+                        console.error("Cuerpo de la respuesta de error:", text);
+                        throw new Error(`Error de red o servidor: ${response.status} ${response.statusText}. Respuesta: ${text.substring(0,200)}...`);
                     });
                 }
-                // Verificar si la respuesta es JSON antes de intentar parsearla
+                
                 const contentType = response.headers.get("content-type");
+                console.log("Content-Type de la respuesta:", contentType);
                 if (contentType && contentType.indexOf("application/json") !== -1) {
+                    console.log("La respuesta es JSON, intentando parsear...");
                     return response.json();
                 } else {
+                    console.warn("La respuesta NO es JSON. Intentando obtener como texto...");
                     return response.text().then(text => {
-                        throw new Error("Respuesta no es JSON. Contenido: " + text.substring(0, 100) + "...");
+                        console.error("Cuerpo de la respuesta no JSON:", text);
+                        throw new Error("Respuesta no es JSON. Contenido: " + text.substring(0, 200) + "...");
                     });
                 }
             })
             .then(data => {
                 spinnerFactura.style.display = 'none';
+                console.log("JSON parseado exitosamente. Datos recibidos del servidor:", data);
 
-                if (data.factura_cobrada === true) {
-                    mostrarMensaje('info', data.message || 'La factura está totalmente cobrada.');
-                    limpiarCamposResultado(); // Asegurarse que los campos estén vacíos
-                    return;
+                // Siempre intentar popular campos si data.datos existe, independientemente de factura_cobrada
+                if (data.datos) {
+                    popularCamposConDatos(data.datos);
+                } else {
+                    console.warn("El objeto 'data' no contiene la propiedad 'datos'.");
+                    // Limpiar campos si no hay data.datos podría ser una opción,
+                    // pero ya se limpian al inicio de buscarDatosFactura.
                 }
 
-                if (data.success && data.datos) {
-                    nitInput.value = data.datos.nit || '';
-                    tipoGlosaInput.value = data.datos.tipo_glosa || '';
-                    descripcionGlosaInput.value = data.datos.descripcion_glosa || '';
-                    estadoConsolidadoInput.value = data.datos.estado_consolidado || '';
-                    
+                // Manejar el caso de factura_cobrada
+                if (data.factura_cobrada === true || data.factura_cobrada === 1) { // FoxPro puede enviar 1 para true
+                    console.log("Factura marcada como cobrada.");
+                    mostrarMensaje('info', data.message || 'La factura está totalmente cobrada.');
+                    // Los campos ya se habrían populado si data.datos existe
+                    return; // Termina el procesamiento normal aquí
+                }
+
+                // Manejar otros casos de éxito o error lógico del backend
+                if (data.success && data.datos) { // success puede ser true/false o 1/0
+                    console.log("Procesando datos normales (no cobrada, éxito).");
+                    // Los campos ya se populado si data.datos existe
                     if (data.datos.tipo_glosa === 'NU') {
                         mostrarMensaje('info', data.datos.descripcion_glosa || 'Factura no registrada para glosas.');
                     } else if (data.message) {
                          mostrarMensaje('success', data.message);
                     }
-
-                } else if (!data.success && data.message) {
-                    // Error de lógica de negocio reportado por el backend
+                } else if (typeof data.success !== 'undefined' && !data.success && data.message) {
+                    console.warn("Respuesta del servidor (no exitosa):", data.message);
                     mostrarMensaje('error', data.message);
-                    limpiarCamposResultado();
-                    console.warn('Respuesta del servidor (no exitosa):', data.message);
+                    // Los campos ya se limpian al inicio de la búsqueda, no es necesario aquí de nuevo.
                 } else {
-                    // Estructura inesperada
-                    throw new Error('La respuesta del servidor no tiene la estructura esperada.');
+                    console.error("Respuesta del servidor con estructura inesperada (faltan 'success' o 'datos/message'):", data);
+                    mostrarMensaje('error', 'Respuesta inesperada del servidor.');
                 }
             })
             .catch(error => {
                 spinnerFactura.style.display = 'none';
-                console.error('Error en la petición AJAX o procesamiento de respuesta:', error);
-                mostrarMensaje('error', 'Error al consultar la factura: ' + error.message);
+                console.error('CATCH: Error en la petición AJAX o procesamiento de respuesta:', error);
+                mostrarMensaje('error', 'Error al consultar la factura: ' + error.message.substring(0,150) + '...');
                 limpiarCamposResultado();
             });
         }
 
         function debouncedBuscarDatosFactura() {
             clearTimeout(debounceTimer);
-            spinnerFactura.style.display = 'none'; // Ocultar spinner si se cancela timer
+            spinnerFactura.style.display = 'none';
             debounceTimer = setTimeout(buscarDatosFactura, 700); 
         }
 
-        serieInput.addEventListener('input', debouncedBuscarDatosFactura);
-        numeroFacturaInput.addEventListener('input', debouncedBuscarDatosFactura);
-
-        // Prevenir envío del formulario si es solo para la búsqueda AJAX
-        document.getElementById('radicacionForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-            // Aquí podrías agregar la lógica para "Guardar" los datos si el formulario
-            // también tiene esa funcionalidad, de lo contrario, no hacer nada o
-            // incluso disparar `buscarDatosFactura` si los campos están llenos.
-            console.log('Formulario "Guardar" presionado. Lógica de guardado no implementada aquí.');
-            mostrarMensaje('info', 'Funcionalidad de "Guardar" no implementada en este ejemplo.');
-        });
+        // Event Listeners
+        if(serieInput && numeroFacturaInput) { // Asegurarse que los elementos existen antes de añadir listeners
+            serieInput.addEventListener('input', debouncedBuscarDatosFactura);
+            numeroFacturaInput.addEventListener('input', debouncedBuscarDatosFactura);
+        } else {
+            console.error("No se encontraron los inputs de serie o número de factura para añadir listeners.");
+        }
+        
+        const form = document.getElementById('radicacionForm');
+        if (form) {
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+                console.log('Formulario "Guardar" presionado. Lógica de guardado no implementada aquí.');
+                mostrarMensaje('info', 'Funcionalidad de "Guardar" no implementada en este ejemplo.');
+            });
+        } else {
+            console.error("No se encontró el formulario 'radicacionForm'.");
+        }
 
     </script>
 </body>
