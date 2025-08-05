@@ -1,0 +1,183 @@
+/* assets/css/style.css */
+:root {
+    --primary-color: #0056b3;
+    --secondary-color: #f8f9fa;
+    --font-color: #333;
+    --border-color: #dee2e6;
+    --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: var(--secondary-color);
+    color: var(--font-color);
+    margin: 0;
+    padding: 20px;
+}
+
+main {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+header h1 {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.filtros-container form {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    background: #fff;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: var(--card-shadow);
+    margin-bottom: 2rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-size: 0.9em;
+    margin-bottom: 5px;
+    color: #666;
+}
+
+.form-group input, form button {
+    padding: 10px 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    font-size: 1em;
+}
+
+form button {
+    background-color: var(--primary-color);
+    color: white;
+    cursor: pointer;
+    border: none;
+    transition: background-color 0.3s;
+    align-self: flex-end; /* Alinear con la base del input */
+}
+
+form button:hover {
+    background-color: #004494;
+}
+
+#dashboard-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+}
+
+.usuario-card {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: var(--card-shadow);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.usuario-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.card-header h3 {
+    margin: 0;
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 10px;
+}
+
+.card-section h4 {
+    margin: 0 0 10px 0;
+    color: #555;
+    font-size: 1.1em;
+}
+
+.card-summary p, .promedios-info p, .ratificacion-item p {
+    margin: 5px 0;
+    display: flex;
+    justify-content: space-between;
+}
+
+.ratificacion-item p {
+    font-size: 0.95em;
+}
+
+.card-summary strong, .promedios-info strong, .ratificacion-item strong {
+    color: #000;
+}
+
+hr {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 10px 0;
+}
+
+.loader, .no-results {
+    grid-column: 1 / -1;
+    text-align: center;
+    font-size: 1.2em;
+    color: #666;
+    padding: 3rem;
+}
+
+/* Añade esto a tu assets/css/style.css */
+
+.report-nav {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1rem;
+}
+
+.nav-button {
+    padding: 10px 20px;
+    font-size: 1.1em;
+    background-color: transparent;
+    border: 2px solid transparent;
+    border-bottom: 2px solid transparent;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.nav-button:hover {
+    color: var(--primary-color);
+}
+
+.nav-button.active {
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--primary-color);
+    font-weight: bold;
+}
+
+/* Añade esto a tu assets/css/style.css */
+.inconsistency-warning {
+    grid-column: 1 / -1; /* Ocupa todo el ancho */
+    background-color: #fff3cd;
+    color: #664d03;
+    padding: 1rem;
+    border: 1px solid #ffecb5;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
