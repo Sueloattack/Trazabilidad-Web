@@ -12,7 +12,8 @@ class ConnectionFox
             try {
                 self::$conexion = self::connect();
             } catch (\Exception $e) {
-                die("No se pudo conectar a GEMA...");
+                //die("No se pudo conectar a GEMA...");
+                die("ERROR DETALLADO AL CONECTAR A FOXPRO: " . $e->getMessage()); 
             }
         }
         return self::$conexion;
