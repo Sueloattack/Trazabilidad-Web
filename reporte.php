@@ -29,11 +29,11 @@
             <form id="filtro-form">
                 <div class="form-group">
                     <label for="fecha_inicio">Fecha Inicio:</label>
-                    <input type="date" id="fecha_inicio" name="fecha_inicio">
+                    <input type="date" id="fecha_inicio" name="fecha_inicio" required>
                 </div>
                 <div class="form-group">
                     <label for="fecha_fin">Fecha Fin:</label>
-                    <input type="date" id="fecha_fin" name="fecha_fin">
+                    <input type="date" id="fecha_fin" name="fecha_fin" required>
                 </div>
                 <button type="submit">Generar Reporte</button>
             </form>
@@ -46,20 +46,6 @@
     </main>
 
     <script src="assets/js/main.js"></script>
-
-    <!-- ======== MODAL DE INCONSISTENCIAS ======== -->
-    <div id="modal-inconsistencias" class="modal-overlay" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Glosas con Inconsistencias</h2>
-                <button id="close-modal-button" class="close-button">&times;</button>
-            </div>
-            <div id="inconsistencias-list" class="modal-body">
-                <!-- El contenido se generará con JavaScript -->
-            </div>
-        </div>
-    </div>
-    <!-- ======================================== -->
 
     <!-- ======== MODAL DE DETALLES DE FACTURA ======== -->
     <div id="modal-detalles" class="modal-overlay" style="display: none;">

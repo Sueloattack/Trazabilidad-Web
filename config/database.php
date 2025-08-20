@@ -1,10 +1,10 @@
 <?php
 // Configuración PDO para MySQL
 return [
-    'host' => '127.0.0.1',     // O tu host 192.168.1.16
-    'db' => '441',             // Tu nombre de base de datos
-    'user' => 'root',          // Tu usuario de MySQL
-    'pass' => '',             // Tu contraseña de MySQL
+    'host' => '192.168.1.1',     // O tu host 192.168.1.16
+    'db' => 'calidad',             // Tu nombre de base de datos
+    'user' => 'local_ro',          // Tu usuario de MySQL
+    'pass' => '@so2025*',             // Tu contraseña de MySQL
     'charset' => 'utf8mb4',
     'options' => [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,

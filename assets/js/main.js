@@ -1,4 +1,4 @@
-// assets/js/main.js (Completo con Fechas, Modal de Inconsistencias y Modal de Detalles)
+// assets/js/main.js (Versión simplificada y final)
 
 document.addEventListener('DOMContentLoaded', () => {
     
@@ -9,12 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const fechaFinInput = document.getElementById('fecha_fin');
     const navButtons = document.querySelectorAll('.nav-button');
     
-    // Selectores para el modal de Inconsistencias
-    const modalInconsistencias = document.getElementById('modal-inconsistencias');
-    const closeModalInconsistencias = document.getElementById('close-modal-button');
-    const inconsistenciasListDiv = document.getElementById('inconsistencias-list');
-
-    // Selectores para el modal de Detalles de Factura
+    // Selectores para el modal de Detalles de Factura (único modal ahora)
     const modalDetalles = document.getElementById('modal-detalles');
     const closeDetallesModalButton = document.getElementById('close-detalles-modal-button');
     const detallesListDiv = document.getElementById('detalles-list');
@@ -22,22 +17,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 2. ESTADO DE LA APLICACIÓN ---
     let activeReport = 'ingreso';
-    let currentInconsistencies = [];
+    let detallesPorResponsable = {}; // Guardará el mapa enriquecido del reporte principal
 
     // --- 3. FUNCIONES ---
 
     /**
-     * Establece el rango de fechas por defecto: hoy y hace 15 días.
+     * Establece el rango de fechas por defecto a vacío.
      */
     const setDefaultDates = () => {
-        const today = new Date();
-        const fifteenDaysAgo = new Date();
-        fifteenDaysAgo.setDate(today.getDate() - 14); // Correcto
-
-        const formatAsYMD = (date) => date.toISOString().split('T')[0];
-
-        fechaFinInput.value = formatAsYMD(today);
-        fechaInicioInput.value = formatAsYMD(fifteenDaysAgo);
+        fechaFinInput.value = '';
+        fechaInicioInput.value = '';
     };
 
     /**
@@ -45,17 +34,25 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     const fetchReporte = async (reporte, fechaInicio = '', fechaFin = '') => {
         dashboardContainer.innerHTML = '<div class="loader">Cargando datos...</div>';
-        currentInconsistencies = [];
+        detallesPorResponsable = {}; 
 
         try {
-            const url = `api/reporte_${reporte}.php?${new URLSearchParams({ fecha_inicio: fechaInicio, fecha_fin: fechaFin })}`;
+            const params = new URLSearchParams();
+            if (fechaInicio) params.append('fecha_inicio', fechaInicio);
+            if (fechaFin) params.append('fecha_fin', fechaFin);
+            
+            const url = `api/reporte_${reporte}.php?${params.toString()}`;
+
             const response = await fetch(url);
             if (!response.ok) {
                 const errorText = await response.text();
                 throw new Error(`Error en el servidor: ${response.statusText}. Respuesta: ${errorText}`);
             }
             const responseData = await response.json();
+            
+            detallesPorResponsable = responseData.detalle_mapa || {};
             renderContent(responseData, reporte);
+
         } catch (error) {
             console.error(`Error al obtener el reporte '${reporte}':`, error);
             dashboardContainer.innerHTML = `<div class="no-results error">Error al cargar el reporte.<br><pre>${error.message}</pre></div>`;
@@ -68,17 +65,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderContent = (responseData, reporte) => {
         dashboardContainer.innerHTML = '';
 
-        if (responseData && responseData.inconsistencias && responseData.inconsistencias.length > 0) {
-            currentInconsistencies = responseData.inconsistencias;
-            const warningHTML = `
-                <div class="inconsistency-warning">
-                    <strong>Atención:</strong> Se encontraron ${currentInconsistencies.length} glosas con inconsistencias.
-                    <a id="open-modal-link">Ver detalles</a>
-                </div>
-            `;
-            dashboardContainer.insertAdjacentHTML('afterbegin', warningHTML);
-        }
-
         if (!responseData || !responseData.data || responseData.data.length === 0) {
             dashboardContainer.innerHTML += `<div class="no-results">No se encontraron datos para el reporte de '${reporte}' en el período seleccionado.</div>`;
         } else {
@@ -88,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     renderReporteDetallado(responseData.data);
                     break;
                 case 'erp':
-                    dashboardContainer.innerHTML += `<div>Renderizado para 'ERP' irá aquí.</div>`;
+                    dashboardContainer.innerHTML += `<div>El renderizado para el reporte 'Radicación ERP' aún no está implementado.</div>`;
                     break;
                 default:
                     dashboardContainer.innerHTML += `<div class="no-results error">Tipo de reporte desconocido.</div>`;
@@ -97,18 +83,21 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     /**
-     * Renderiza las tarjetas de datos detalladas.
+     * Renderiza las tarjetas de datos detalladas para los reportes.
      */
     const renderReporteDetallado = (itemsData) => {
         itemsData.forEach(item => {
             let desgloseHTML = '';
-            for (const [key, value] of Object.entries(item.desglose_ratificacion)) {
-                if (value.cantidad > 0) {
-                    desgloseHTML += `<p><span>${key.toUpperCase()}</span><span><strong>${value.cantidad}</strong> / ${value.valor}</span></p>`;
+            if (item.desglose_ratificacion) {
+                for (const [key, value] of Object.entries(item.desglose_ratificacion)) {
+                    if (value.cantidad > 0) {
+                        desgloseHTML += `<p><span>${key.toUpperCase()}</span><span><strong>${value.cantidad}</strong> / ${value.valor}</span></p>`;
+                    }
                 }
             }
             if (desgloseHTML === '') { desgloseHTML = '<p>No hay desglose para este período.</p>'; }
 
+            // [CAMBIO] Añadimos la nueva sección de totales al HTML de la tarjeta
             dashboardContainer.innerHTML += `
                 <div class="item-card" data-responsable="${item.responsable}">
                     <div class="card-header"><h3>${item.responsable}</h3></div>
@@ -125,62 +114,163 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="card-section ratificacion-details">
                         <h4>Desglose por Ratificación</h4>
                         <div class="ratificacion-item">${desgloseHTML}</div>
+                    </div><hr>
+
+                    <!-- ============ NUEVA SECCIÓN DE TOTALES ============ -->
+                    <div class="card-section card-totals">
+                        <h4>Totales de Ítems</h4>
+                        <p><span>Total Ítems:</span><strong>${item.total_items}</strong></p>
+                        <p><span>Valor Glosado:</span><strong>${item.valor_glosado}</strong></p>
+                        <p><span>Valor Aceptado:</span><strong>${item.valor_aceptado}</strong></p>
+                        <p><span>Valor Total:</span><strong>${item.valor_total_items}</strong></p>
                     </div>
                 </div>`;
         });
     };
     
     /**
-     * Llama a la API para obtener los detalles de las facturas de un responsable.
+     * Muestra el modal, solicita los nombres de los terceros y luego llama a renderDetallesModal.
      */
-    const fetchDetalles = async (responsable, fechaInicio, fechaFin) => {
+    const fetchDetalles = async (responsable) => {
         detallesModalTitle.textContent = `Detalle de Facturas para ${responsable}`;
         detallesListDiv.innerHTML = '<div class="loader">Cargando detalles...</div>';
         modalDetalles.style.display = 'flex';
         
-        try {
-            const params = new URLSearchParams({ responsable, fecha_inicio: fechaInicio, fecha_fin: fechaFin });
-            const url = `api/reporte_detalles.php?${params.toString()}`;
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error('La respuesta de la red no fue exitosa.');
-            }
-            const detalles = await response.json();
-            renderDetallesModal(detalles);
-        } catch (error) {
-            console.error('Error al obtener detalles:', error);
-            detallesListDiv.innerHTML = '<div class="no-results error">No se pudo cargar el detalle.</div>';
-        }
-    };
-    
-    /**
-     * Renderiza el contenido del modal de detalles de facturas.
-     */
-    const renderDetallesModal = (detalles) => {
-        if (!detalles || detalles.length === 0) {
-            detallesListDiv.innerHTML = '<p>No se encontraron detalles para este responsable en el período seleccionado.</p>';
+        const detallesMap = detallesPorResponsable[responsable];
+        if (!detallesMap || Object.keys(detallesMap).length === 0) {
+            detallesListDiv.innerHTML = '<p>No se encontró mapa de detalles para este responsable.</p>';
             return;
         }
-        let tableHTML = '<table class="inconsistency-table"><thead><tr><th>Serie</th><th>Documento</th><th>Tercero</th><th>Valor Glosa</th></tr></thead><tbody>';
-        detalles.forEach(d => {
-            tableHTML += `<tr><td>${d.serie}</td><td>${d.fc_docn}</td><td>${d.tercero}</td><td>${d.vr_glosa}</td></tr>`;
-        });
-        tableHTML += '</tbody></table>';
-        detallesListDiv.innerHTML = tableHTML;
+
+        try {
+            const response = await fetch('api/reporte_detalles.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ detalles: detallesMap })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'La respuesta del servidor no fue exitosa.');
+            }
+            
+            const mapaNombres = await response.json();
+            renderDetallesModal(detallesMap, mapaNombres);
+
+        } catch (error) {
+            console.error('Error al obtener los detalles:', error);
+            detallesListDiv.innerHTML = `<p class="error">Error al cargar los detalles: ${error.message}</p>`;
+        }
     };
     
     /**
-     * Abre y puebla el modal con los datos de inconsistencias.
+     * Renderiza el contenido del modal de detalles con los nuevos títulos y formato de datos.
+     * @param {object} detallesMap - El mapa de facturas enriquecido.
+     * @param {object} mapaNombres - El diccionario de nombres de terceros.
      */
-    const openInconsistencyModal = () => {
-        inconsistenciasListDiv.innerHTML = '';
-        let tableHTML = '<table class="inconsistency-table"><thead><tr><th>ID Compuesto</th><th>Motivo</th></tr></thead><tbody>';
-        currentInconsistencies.forEach(item => {
-            tableHTML += `<tr><td>${item.id}</td><td>${item.motivo}</td></tr>`;
+    const renderDetallesModal = (detallesMap, mapaNombres) => {
+        // --- PASO 1: Procesar y preparar los datos para ordenar ---
+        let filasProcesadas = [];
+        for (const [idCompuesto, itemsList] of Object.entries(detallesMap)) {
+            
+            let valorGlosadoNum = 0;
+            itemsList.forEach(item => {
+                if (item.estatus !== 'ae') {
+                    valorGlosadoNum += item.valor;
+                }
+            });
+            
+            filasProcesadas.push({
+                idCompuesto: idCompuesto,
+                itemsList: itemsList,
+                valorGlosadoNum: valorGlosadoNum // Guardamos el valor numérico para ordenar
+            });
+        }
+
+        // --- PASO 2: Ordenar el array de filas de mayor a menor Valor Glosado ---
+        filasProcesadas.sort((a, b) => b.valorGlosadoNum - a.valorGlosadoNum);
+        
+        // --- PASO 3: Construir el HTML con los datos ya ordenados ---
+        let tableHTML = `
+            <table class="inconsistency-table">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Glosa</th>
+                        <th>Entidad</th>
+                        <th>Total Ítems</th>
+                        <th>Desglose por estado</th>
+                        <th>Valor Glosado</th>
+                        <th>Valor Aceptado</th>
+                        <th>Total Reclamado</th> <!-- [NUEVO] Cabecera de la columna -->
+                    </tr>
+                </thead>
+                <tbody>`;
+
+        let numeroFila = 1;
+        const totales = { items: 0, glosado: 0.0, aceptado: 0.0, reclamado: 0.0 };
+        const formatter = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
+
+        filasProcesadas.forEach(fila => {
+            const { idCompuesto, itemsList } = fila;
+            const parts = idCompuesto.split('-');
+            const documento = `${parts[0]}${parts[1]}`;
+            const codigoTercero = parts[2];
+            const nombreTercero = mapaNombres[codigoTercero] || codigoTercero;
+            
+            const totalItems = itemsList.length;
+            const desglose = { estatusCounts: {}, valorGlosado: 0.0, valorAceptado: 0.0 };
+
+            itemsList.forEach(item => {
+                desglose.estatusCounts[item.estatus] = (desglose.estatusCounts[item.estatus] || 0) + 1;
+                if (item.estatus === 'ae') {
+                    desglose.valorAceptado += item.valor;
+                } else {
+                    desglose.valorGlosado += item.valor;
+                }
+            });
+
+            // [NUEVO] Calcular el total para la fila actual
+            const totalReclamadoFila = desglose.valorGlosado + desglose.valorAceptado;
+            
+            const desgloseStr = Object.entries(desglose.estatusCounts)
+                .map(([est, count]) => `${est.toUpperCase()} (${count})`)
+                .join(', ');
+
+            tableHTML += `
+                <tr>
+                    <td>${numeroFila++}</td>
+                    <td>${documento}</td>
+                    <td>${nombreTercero}</td>
+                    <td>${totalItems}</td>
+                    <td>${desgloseStr}</td>
+                    <td>${formatter.format(desglose.valorGlosado)}</td>
+                    <td>${formatter.format(desglose.valorAceptado)}</td>
+                    <td>${formatter.format(totalReclamadoFila)}</td> <!-- [NUEVO] Celda de la columna -->
+                </tr>`;
+
+            // Acumular para los totales generales
+            totales.items += totalItems;
+            totales.glosado += desglose.valorGlosado;
+            totales.aceptado += desglose.valorAceptado;
+            totales.reclamado += totalReclamadoFila; // Acumular el nuevo total
         });
-        tableHTML += '</tbody></table>';
-        inconsistenciasListDiv.innerHTML = tableHTML;
-        modalInconsistencias.style.display = 'flex';
+        
+        tableHTML += '</tbody>';
+        tableHTML += `
+            <tfoot>
+                <tr>
+                    <th colspan="3">TOTALES</th>
+                    <th>${totales.items.toLocaleString('es-CO')}</th>
+                    <th></th>
+                    <th>${formatter.format(totales.glosado)}</th>
+                    <th>${formatter.format(totales.aceptado)}</th>
+                    <th>${formatter.format(totales.reclamado)}</th> <!-- [NUEVO] Celda del total general -->
+                </tr>
+            </tfoot>`;
+        tableHTML += '</table>';
+        
+        detallesListDiv.innerHTML = tableHTML;
     };
 
     // --- 4. MANEJADORES DE EVENTOS ---
@@ -195,38 +285,32 @@ document.addEventListener('DOMContentLoaded', () => {
             navButtons.forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
             activeReport = button.dataset.report;
-            fetchReporte(activeReport, fechaInicioInput.value, fechaFinInput.value);
+            if (fechaInicioInput.value && fechaFinInput.value) {
+                fetchReporte(activeReport, fechaInicioInput.value, fechaFinInput.value);
+            }
         });
     });
 
-    // Delegación de eventos para clicks dentro del dashboard (eficiente y robusto)
+    // Delegación de eventos para clicks en una tarjeta
     dashboardContainer.addEventListener('click', (event) => {
-        // Clic en "Ver detalles" de inconsistencias
-        if (event.target && event.target.id === 'open-modal-link') {
-            event.preventDefault();
-            openInconsistencyModal();
-        }
-        
-        // Clic en una tarjeta de item/responsable
         const card = event.target.closest('.item-card');
         if (card && card.dataset.responsable) {
             const responsable = card.dataset.responsable;
-            fetchDetalles(responsable, fechaInicioInput.value, fechaFinInput.value);
+            fetchDetalles(responsable);
         }
     });
 
-    // Eventos para cerrar los modales
-    closeModalInconsistencias.addEventListener('click', () => modalInconsistencias.style.display = 'none');
-    modalInconsistencias.addEventListener('click', (event) => {
-        if (event.target === modalInconsistencias) { modalInconsistencias.style.display = 'none'; }
-    });
-    
-    closeDetallesModalButton.addEventListener('click', () => modalDetalles.style.display = 'none');
-    modalDetalles.addEventListener('click', (event) => {
-        if (event.target === modalDetalles) { modalDetalles.style.display = 'none'; }
-    });
+    // Eventos para cerrar el modal de detalles
+    if (closeDetallesModalButton) {
+        closeDetallesModalButton.addEventListener('click', () => modalDetalles.style.display = 'none');
+    }
+    if (modalDetalles) {
+        modalDetalles.addEventListener('click', (event) => {
+            if (event.target === modalDetalles) { modalDetalles.style.display = 'none'; }
+        });
+    }
 
     // --- 5. INICIALIZACIÓN ---
     setDefaultDates();
-    fetchReporte(activeReport, fechaInicioInput.value, fechaFinInput.value);
+    dashboardContainer.innerHTML = '<div class="no-results">Por favor, seleccione un rango de fechas y genere un reporte.</div>';
 });
