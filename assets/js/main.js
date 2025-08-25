@@ -153,9 +153,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const errorData = await response.json();
                 throw new Error(errorData.error || 'La respuesta del servidor no fue exitosa.');
             }
-            
+
             const mapaNombres = await response.json();
-            renderDetallesModal(detallesMap, mapaNombres);
+            const estatusAceptado = (activeReport === 'analistas') ? 'ai' : 'ae';
+
+            // 2. Pasa ese estatus como un tercer argumento a la función de renderizado.
+            renderDetallesModal(detallesMap, mapaNombres, estatusAceptado);
 
         } catch (error) {
             console.error('Error al obtener los detalles:', error);
@@ -168,14 +171,14 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {object} detallesMap - El mapa de facturas enriquecido.
      * @param {object} mapaNombres - El diccionario de nombres de terceros.
      */
-    const renderDetallesModal = (detallesMap, mapaNombres) => {
+    const renderDetallesModal = (detallesMap, mapaNombres,estatusAceptado) => {
         // --- PASO 1: Procesar y preparar los datos para ordenar ---
         let filasProcesadas = [];
         for (const [idCompuesto, itemsList] of Object.entries(detallesMap)) {
             
             let valorGlosadoNum = 0;
             itemsList.forEach(item => {
-                if (item.estatus !== 'ae') {
+                if (item.estatus !== estatusAceptado) {
                     valorGlosadoNum += item.valor;
                 }
             });
@@ -223,7 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             itemsList.forEach(item => {
                 desglose.estatusCounts[item.estatus] = (desglose.estatusCounts[item.estatus] || 0) + 1;
-                if (item.estatus === 'ae') {
+                if (item.estatus === estatusAceptado) {
                     desglose.valorAceptado += item.valor;
                 } else {
                     desglose.valorGlosado += item.valor;

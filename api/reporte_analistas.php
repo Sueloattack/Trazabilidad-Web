@@ -4,7 +4,7 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 header('Content-Type: application/json');
-ini_set('max_execution_time', 180);
+
 
 require_once '../helpers/gema_api_client.php';
 require_once '../helpers/reporte_engine.php'; // Incluimos el motor
@@ -20,12 +20,15 @@ try {
     // Los 4 que vienen del estatus 1 y la clave "ae" por si acaso.
     $desglose_keys = ['c1', 'c2', 'c3', 'co', 'ai', 'ae']; 
 
+    $estatus_aceptado_analistas = 'ai';
+
     // Llama al motor de procesamiento
     $respuestaFinal = generarReporte(
         $fecha_inicio,
         $fecha_fin,
         $estatus_validos,
-        $desglose_keys
+        $desglose_keys,
+        $estatus_aceptado_analistas
     );
     
     // Devuelve la respuesta como JSON

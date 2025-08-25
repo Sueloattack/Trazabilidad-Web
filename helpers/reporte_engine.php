@@ -16,7 +16,8 @@ function generarReporte(
     $fecha_inicio,
     $fecha_fin,
     $estatus_validos,
-    $desglose_keys 
+    $desglose_keys,
+    $estatus_aceptado
 ) {
     // --- PASO 1: CREACIÓN DE LA CONSULTA SQL ---
     
@@ -103,7 +104,7 @@ function generarReporte(
         $resultadosAgregados[$responsable_final]['valor_total_glosas'] += $valorItem; 
         $resultadosAgregados[$responsable_final]['total_items']++;
 
-        if ($tipoItem === 'ae') { // AE solo aplica en el reporte de ingreso/glosa, si se usa en analistas no se suma.
+        if ($tipoItem === $estatus_aceptado) { 
             $resultadosAgregados[$responsable_final]['valor_aceptado'] += $valorItem;
         } else {
             $resultadosAgregados[$responsable_final]['valor_glosado'] += $valorItem;

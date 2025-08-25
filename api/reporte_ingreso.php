@@ -4,7 +4,7 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 header('Content-Type: application/json');
-ini_set('max_execution_time', 180);
+
 
 require_once '../helpers/gema_api_client.php';
 require_once '../helpers/reporte_engine.php'; // Incluimos el nuevo motor
@@ -18,12 +18,15 @@ try {
     // CLAVES DE DESGLOSE A ESPERAR EN EL FORMATO FINAL (minúsculas)
     $desglose_keys = ['nu', 'r2', 'r3', 'r4', 'ae']; 
 
+    $estatus_aceptado_ingreso = 'ae';
+
     // Llama al motor de procesamiento y obtiene la respuesta en PHP Array
     $respuestaFinal = generarReporte(
         $fecha_inicio,
         $fecha_fin,
         $estatus_validos,
-        $desglose_keys
+        $desglose_keys,
+        $estatus_aceptado_ingreso
     );
     
     // Devuelve la respuesta como JSON
