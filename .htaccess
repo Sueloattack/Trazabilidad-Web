@@ -1,0 +1,5 @@
+# Activa el motor de reescritura, necesario para que el resto funcione
+RewriteEngine On
+
+# Establece 'reporte.php' como la página por defecto al visitar la raíz
+DirectoryIndex reporte.php
