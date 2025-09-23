@@ -8,7 +8,7 @@
  * que mapea cada identificador a su nombre correspondiente.
  * No procesa lógica de negocio, solo enriquece los datos del cliente.
  */
-ini_set('memory_limit', '512M'); 
+
 // --- 1. CONFIGURACIÓN INICIAL ---
 ini_set('display_errors', 1);
 error_reporting(E_ALL);

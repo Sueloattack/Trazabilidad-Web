@@ -74,13 +74,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     renderReporteDetallado(responseData.data);
                     break;
                 case 'erp':
-                    dashboardContainer.innerHTML += `<div>El renderizado para el reporte 'Radicación ERP' aún no está implementado.</div>`;
+                    renderReporteERP(responseData.data);
                     break;
                 default:
                     dashboardContainer.innerHTML += `<div class="no-results error">Tipo de reporte desconocido.</div>`;
             }
         }
     };
+
 
     /**
      * Renderiza las tarjetas de datos detalladas para los reportes.
@@ -129,16 +130,22 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     /**
-     * Muestra el modal, solicita los nombres de los terceros y luego llama a renderDetallesModal.
+     * Muestra el modal y carga los detalles según el tipo de reporte.
      */
     const fetchDetalles = async (responsable) => {
-        detallesModalTitle.textContent = `Detalle de Facturas para ${responsable}`;
+        detallesModalTitle.textContent = `Detalle de Documentos para ${responsable}`;
         detallesListDiv.innerHTML = '<div class="loader">Cargando detalles...</div>';
         modalDetalles.style.display = 'flex';
         
-        const detallesMap = detallesPorResponsable[responsable];
-        if (!detallesMap || Object.keys(detallesMap).length === 0) {
+        const detalles = detallesPorResponsable[responsable];
+        if (!detalles || detalles.length === 0) {
             detallesListDiv.innerHTML = '<p>No se encontró mapa de detalles para este responsable.</p>';
+            return;
+        }
+
+        // Lógica bifurcada: ERP usa su propio renderizador, los otros van a la API de nombres.
+        if (activeReport === 'erp') {
+            renderERPDetallesModal(detalles);
             return;
         }
 
@@ -146,7 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('api/reporte_detalles.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ detalles: detallesMap })
+                body: JSON.stringify({ detalles: detalles })
             });
 
             if (!response.ok) {
@@ -157,13 +164,134 @@ document.addEventListener('DOMContentLoaded', () => {
             const mapaNombres = await response.json();
             const estatusAceptado = (activeReport === 'analistas') ? 'ai' : 'ae';
 
-            // 2. Pasa ese estatus como un tercer argumento a la función de renderizado.
-            renderDetallesModal(detallesMap, mapaNombres, estatusAceptado);
+            renderDetallesModal(detalles, mapaNombres, estatusAceptado);
 
         } catch (error) {
             console.error('Error al obtener los detalles:', error);
             detallesListDiv.innerHTML = `<p class="error">Error al cargar los detalles: ${error.message}</p>`;
         }
+    };
+
+    /**
+     * [MODIFICADO] Renderiza los datos del reporte ERP en tarjetas de resumen interactivas.
+     */
+    const renderReporteERP = (data) => {
+        const formatter = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
+
+        dashboardContainer.innerHTML = ''; // Limpiar contenido anterior
+
+        data.forEach(item => {
+            dashboardContainer.innerHTML += `
+                <div class="item-card" data-responsable="${item.responsable}">
+                    <div class="card-header"><h3>${item.responsable}</h3></div>
+                    <div class="card-section">
+                        <h4>Resumen de Radicación</h4>
+                        <p><span>Total Cuentas:</span><strong>${item.total_documentos}</strong></p>
+                        <p><span>Total Facturas:</span><strong>${item.total_facturas_radicadas}</strong></p>
+                        <hr>
+                        <p><span>Valor Aceptado:</span><strong>${formatter.format(item.total_aceptado)}</strong></p>
+                        <p><span>Valor Refutado:</span><strong>${formatter.format(item.total_refutado)}</strong></p>
+                        <p><span>Valor Conciliado:</span><strong>${formatter.format(item.total_conciliado)}</strong></p>
+                    </div>
+                </div>`;
+        });
+    };
+
+    /**
+     * [MODIFICADO] Renderiza el contenido del modal de detalles para el reporte ERP con filas expandibles.
+     */
+    const renderERPDetallesModal = (documentos) => {
+        const formatter = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
+        
+        let tableHTML = `
+            <table class="inconsistency-table">
+                <thead>
+                    <tr>
+                        <th></th><!-- Columna para el botón de expandir -->
+                        <th>Cuenta de Cobro</th>
+                        <th>Entidad</th>
+                        <th>Facturas Radicadas</th>
+                        <th>Fecha Creación</th>
+                        <th>Fecha Radicación</th>
+                        <th>Valor Aceptado</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+        const totales = { facturas: 0, aceptado: 0 };
+
+        documentos.forEach(doc => {
+            const cleanGrDocn = doc.gr_docn.replace(/[^a-zA-Z0-9]/g, '-');
+            const facturasCount = doc.facturas_por_cuenta;
+
+            tableHTML += `
+                <tr class="fila-detalle-maestro">
+                    <td>
+                        ${facturasCount > 0 ? `<button class="btn-expandir-sub" data-gr_docn="${doc.gr_docn}" data-target-id="sub-detalle-${cleanGrDocn}">+</button>` : ''}
+                    </td>
+                    <td>${doc.gr_docn}</td>
+                    <td>${doc.tercero_nombre}</td>
+                    <td><strong>${facturasCount}</strong></td>
+                    <td>${doc.freg}</td>
+                    <td>${doc.fecha_rep}</td>
+                    <td>${formatter.format(doc.vr_tace)}</td>
+                </tr>
+                <tr class="fila-sub-detalle" id="sub-detalle-${cleanGrDocn}" style="display: none;">
+                    <td colspan="7">
+                        <div class="sub-detalle-container">Cargando facturas...</div>
+                    </td>
+                </tr>`;
+            
+            totales.facturas += facturasCount;
+            totales.aceptado += doc.vr_tace;
+        });
+
+        tableHTML += `
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th colspan="3">TOTALES</th>
+                        <th>${totales.facturas}</th>
+                        <th colspan="2"></th>
+                        <th>${formatter.format(totales.aceptado)}</th>
+                    </tr>
+                </tfoot>
+            </table>`;
+
+        detallesListDiv.innerHTML = tableHTML;
+    };
+
+    /**
+     * [MODIFICADO] Renderiza la tabla de sub-detalles (facturas) de forma integrada.
+     */
+    const renderERPSubDetalles = (data, container) => {
+        if (!data || data.length === 0) {
+            container.innerHTML = '<p style="text-align:center; padding: 1rem;">No se encontraron facturas para esta cuenta de cobro.</p>';
+            return;
+        }
+
+        let tableHTML = `
+            <table class="sub-details-table">
+                <thead>
+                    <tr>
+                        <th>Factura</th>
+                        <th>Fecha Glosa</th>
+                        <th>Estatus</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+        data.forEach(item => {
+            tableHTML += `
+                <tr>
+                    <td>${item.factura}</td>
+                    <td>${item.fecha_gl}</td>
+                    <td>${item.estatus1}</td>
+                </tr>`;
+        });
+
+        tableHTML += '</tbody></table>';
+        container.innerHTML = tableHTML;
     };
     
     /**
@@ -300,6 +428,43 @@ document.addEventListener('DOMContentLoaded', () => {
         if (card && card.dataset.responsable) {
             const responsable = card.dataset.responsable;
             fetchDetalles(responsable);
+        }
+    });
+
+    // [NUEVO] Delegación de eventos para expandir sub-detalles en el modal
+    detallesListDiv.addEventListener('click', async (event) => {
+        const expandButton = event.target.closest('.btn-expandir-sub');
+        if (!expandButton) return; // Si no se hizo clic en un botón de expandir, no hacer nada
+
+        const gr_docn = expandButton.dataset.gr_docn;
+        const targetId = expandButton.dataset.targetId;
+        const subDetailRow = document.getElementById(targetId);
+
+        if (!subDetailRow) return;
+
+        // Alternar visibilidad de la fila de sub-detalles
+        const isVisible = subDetailRow.style.display !== 'none';
+        subDetailRow.style.display = isVisible ? 'none' : '';
+        expandButton.textContent = isVisible ? '+' : '-';
+
+        // Cargar datos solo la primera vez que se expande
+        const isLoaded = expandButton.dataset.loaded === 'true';
+        if (!isVisible && !isLoaded) {
+            const subDetailContainer = subDetailRow.querySelector('.sub-detalle-container');
+            try {
+                const response = await fetch(`api/reporte_erp_subdetalles.php?gr_docn=${encodeURIComponent(gr_docn)}`);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Error del servidor: ${errorText}`);
+                }
+                
+                const subDetallesData = await response.json();
+                renderERPSubDetalles(subDetallesData, subDetailContainer);
+                expandButton.dataset.loaded = 'true'; // Marcar como cargado
+
+            } catch (error) {
+                subDetailContainer.innerHTML = `<p class="error" style="text-align:center; padding: 1rem;">${error.message}</p>`;
+            }
         }
     });
 
