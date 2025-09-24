@@ -1,6 +1,6 @@
 <?php
 // api/reporte_ingreso.php (Lanzador de Reporte)
-ini_set('memory_limit', '512M'); 
+
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 header('Content-Type: application/json');

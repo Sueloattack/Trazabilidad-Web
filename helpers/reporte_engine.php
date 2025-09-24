@@ -59,6 +59,19 @@ function generarReporte(
         ];
     }
     
+    // --- Obtener nombres reales de los responsables (quien) ---
+    $quien_aliases = array_unique(array_column($itemsCandidatosVFP, 'quien'));
+    $mapa_quien_nombres = [];
+    if (!empty($quien_aliases)) {
+        // VFP IN clause for strings needs single quotes
+        $in_values_quien = "'" . implode("','", array_map('trim', $quien_aliases)) . "'";
+        $sql_quien_names = "id, nombre FROM gema10.d/dgen/datos/maopera2 WHERE id IN ({$in_values_quien})";
+        $quien_data = queryApiGema($sql_quien_names);
+        foreach ($quien_data as $operador) {
+            $mapa_quien_nombres[trim($operador['id'])] = trim($operador['nombre']);
+        }
+    }
+
     $resultadosAgregados = [];
     $facturasContadasParaTotales = [];
     $mapa_para_detalles_enriquecido = [];
@@ -72,7 +85,9 @@ function generarReporte(
     foreach ($itemsCandidatosVFP as $itemGema) {
         // ... (TODA la lógica de agregación de glosas, totales y mapas) ...
         $idCompuesto = $itemGema['serie'] . '-' . $itemGema['docn'] . '-' . $itemGema['tercero'];
-        $responsable_final = !empty($itemGema['quien']) ? strtoupper(trim($itemGema['quien'])) : '(Sin Asignar)';
+        $responsable_alias = !empty($itemGema['quien']) ? strtoupper(trim($itemGema['quien'])) : '(Sin Asignar)';
+        // Usar el nombre real si se encuentra, de lo contrario, mantener el alias
+        $responsable_final = $mapa_quien_nombres[$responsable_alias] ?? $responsable_alias;
         $tipoItem = $itemGema['estatus1'];
         $valorItem = $itemGema['vr_glosa'];
         

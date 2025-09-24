@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
      * Llama a la API principal para obtener los datos agregados del reporte.
      */
     const fetchReporte = async (reporte, fechaInicio = '', fechaFin = '') => {
-        dashboardContainer.innerHTML = '<div class="loader">Cargando datos...</div>';
+        dashboardContainer.innerHTML = '<div class="col-span-full text-center text-gray-500 p-8 bg-gray-50 rounded-lg shadow-inner">Cargando datos...</div>';
         detallesPorResponsable = {}; 
 
         try {
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error(`Error al obtener el reporte '${reporte}':`, error);
-            dashboardContainer.innerHTML = `<div class="no-results error">Error al cargar el reporte.<br><pre>${error.message}</pre></div>`;
+            dashboardContainer.innerHTML = `<div class="col-span-full text-center text-red-600 p-8 bg-red-50 rounded-lg shadow-inner">Error al cargar el reporte.<br><pre>${error.message}</pre></div>`;
         }
     };
     
@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
         dashboardContainer.innerHTML = '';
 
         if (!responseData || !responseData.data || responseData.data.length === 0) {
-            dashboardContainer.innerHTML += `<div class="no-results">No se encontraron datos para el reporte de '${reporte}' en el período seleccionado.</div>`;
+            dashboardContainer.innerHTML += `<div class="col-span-full text-center text-gray-500 p-8 bg-gray-50 rounded-lg shadow-inner">No se encontraron datos para el reporte de '${reporte}' en el período seleccionado.</div>`;
         } else {
             switch (reporte) {
                 case 'ingreso':
@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     renderReporteERP(responseData.data);
                     break;
                 default:
-                    dashboardContainer.innerHTML += `<div class="no-results error">Tipo de reporte desconocido.</div>`;
+                    dashboardContainer.innerHTML += `<div class="col-span-full text-center text-red-600 p-8 bg-red-50 rounded-lg shadow-inner">Tipo de reporte desconocido.</div>`;
             }
         }
     };
@@ -98,32 +98,36 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (desgloseHTML === '') { desgloseHTML = '<p>No hay desglose para este período.</p>'; }
 
-            // [CAMBIO] Añadimos la nueva sección de totales al HTML de la tarjeta
             dashboardContainer.innerHTML += `
-                <div class="item-card" data-responsable="${item.responsable}">
-                    <div class="card-header"><h3>${item.responsable}</h3></div>
-                    <div class="card-section card-summary">
-                        <h4>Resumen General</h4>
-                        <p><span>Cantidad Ingresada:</span><strong>${item.cantidad_glosas_ingresadas}</strong></p>
-                        <p><span>Valor Total Ingresado:</span><strong>${item.valor_total_glosas}</strong></p>
-                    </div><hr>
-                    <div class="card-section promedios-info">
-                        <h4>Promedios (${item.promedios.periodo})</h4>
-                        <p><span>Promedio Cantidad:</span><strong>${item.promedios.promedio_cantidad}</strong></p>
-                        <p><span>Promedio Valor:</span><strong>${item.promedios.promedio_valor}</strong></p>
-                    </div><hr>
-                    <div class="card-section ratificacion-details">
-                        <h4>Desglose por Ratificación</h4>
-                        <div class="ratificacion-item">${desgloseHTML}</div>
-                    </div><hr>
+                <div class="item-card bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 ease-in-out cursor-pointer border border-gray-200 hover:border-blue-500" data-responsable="${item.responsable}">
+                    <div class="p-4 border-b border-gray-200 bg-gray-50">
+                        <h3 class="text-lg font-montserrat font-semibold text-gray-800">${item.responsable}</h3>
+                    </div>
+                    <div class="p-4 space-y-3">
+                        <h4 class="text-xs font-montserrat font-medium text-gray-500 uppercase tracking-wider">Resumen General</h4>
+                        <p class="flex justify-between text-sm text-gray-700"><span>Cantidad Ingresada:</span><strong class="font-semibold text-gray-900">${item.cantidad_glosas_ingresadas}</strong></p>
+                        <p class="flex justify-between text-sm text-gray-700"><span>Valor Total Ingresado:</span><strong class="font-semibold text-gray-900">${item.valor_total_glosas}</strong></p>
+                    </div>
+                    <hr class="border-gray-200 mx-4">
+                    <div class="p-4 space-y-3">
+                        <h4 class="text-xs font-montserrat font-medium text-gray-500 uppercase tracking-wider">Promedios (${item.promedios.periodo})</h4>
+                        <p class="flex justify-between text-sm text-gray-700"><span>Promedio Cantidad:</span><strong class="font-semibold text-gray-900">${item.promedios.promedio_cantidad}</strong></p>
+                        <p class="flex justify-between text-sm text-gray-700"><span>Promedio Valor:</span><strong class="font-semibold text-gray-900">${item.promedios.promedio_valor}</strong></p>
+                    </div>
+                    <hr class="border-gray-200 mx-4">
+                    <div class="p-4 space-y-3">
+                        <h4 class="text-xs font-montserrat font-medium text-gray-500 uppercase tracking-wider">Desglose por Ratificación</h4>
+                        <div class="space-y-2">${desgloseHTML}</div>
+                    </div>
+                    <hr class="border-gray-200 mx-4">
 
                     <!-- ============ NUEVA SECCIÓN DE TOTALES ============ -->
-                    <div class="card-section card-totals">
-                        <h4>Totales de Ítems</h4>
-                        <p><span>Total Ítems:</span><strong>${item.total_items}</strong></p>
-                        <p><span>Valor Glosado:</span><strong>${item.valor_glosado}</strong></p>
-                        <p><span>Valor Aceptado:</span><strong>${item.valor_aceptado}</strong></p>
-                        <p><span>Valor Total:</span><strong>${item.valor_total_items}</strong></p>
+                    <div class="p-4 space-y-3 bg-blue-50 rounded-b-lg">
+                        <h4 class="text-xs font-montserrat font-medium text-blue-700 uppercase tracking-wider">Totales de Ítems</h4>
+                        <p class="flex justify-between text-sm text-blue-800"><span>Total Ítems:</span><strong class="font-bold">${item.total_items}</strong></p>
+                        <p class="flex justify-between text-sm text-blue-800"><span>Valor Glosado:</span><strong class="font-bold">${item.valor_glosado}</strong></p>
+                        <p class="flex justify-between text-sm text-blue-800"><span>Valor Aceptado:</span><strong class="font-bold">${item.valor_aceptado}</strong></p>
+                        <p class="flex justify-between text-sm text-blue-800"><span>Valor Total:</span><strong class="font-bold">${item.valor_total_items}</strong></p>
                     </div>
                 </div>`;
         });
@@ -134,8 +138,9 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     const fetchDetalles = async (responsable) => {
         detallesModalTitle.textContent = `Detalle de Documentos para ${responsable}`;
-        detallesListDiv.innerHTML = '<div class="loader">Cargando detalles...</div>';
-        modalDetalles.style.display = 'flex';
+        detallesListDiv.innerHTML = '<div class="text-center text-gray-500 p-8 bg-gray-50 rounded-lg shadow-inner">Cargando detalles...</div>';
+        modalDetalles.classList.remove('hidden');
+        modalDetalles.classList.add('flex');
         
         const detalles = detallesPorResponsable[responsable];
         if (!detalles || detalles.length === 0) {
@@ -182,16 +187,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         data.forEach(item => {
             dashboardContainer.innerHTML += `
-                <div class="item-card" data-responsable="${item.responsable}">
-                    <div class="card-header"><h3>${item.responsable}</h3></div>
-                    <div class="card-section">
-                        <h4>Resumen de Radicación</h4>
-                        <p><span>Total Cuentas:</span><strong>${item.total_documentos}</strong></p>
-                        <p><span>Total Facturas:</span><strong>${item.total_facturas_radicadas}</strong></p>
-                        <hr>
-                        <p><span>Valor Aceptado:</span><strong>${formatter.format(item.total_aceptado)}</strong></p>
-                        <p><span>Valor Refutado:</span><strong>${formatter.format(item.total_refutado)}</strong></p>
-                        <p><span>Valor Conciliado:</span><strong>${formatter.format(item.total_conciliado)}</strong></p>
+                <div class="item-card bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 ease-in-out cursor-pointer border border-gray-200 hover:border-blue-500" data-responsable="${item.responsable}">
+                    <div class="p-4 border-b border-gray-200 bg-gray-50">
+                        <h3 class="text-lg font-montserrat font-semibold text-gray-800">${item.responsable}</h3>
+                    </div>
+                    <div class="p-4 space-y-3">
+                        <h4 class="text-xs font-montserrat font-medium text-gray-500 uppercase tracking-wider">Resumen de Radicación</h4>
+                        <p class="flex justify-between text-sm text-gray-700"><span>Total Cuentas:</span><strong class="font-semibold text-gray-900">${item.total_documentos}</strong></p>
+                        <p class="flex justify-between text-sm text-gray-700"><span>Total Facturas:</span><strong class="font-semibold text-gray-900">${item.total_facturas_radicadas}</strong></p>
+                        <hr class="border-gray-200 my-3">
+                        <p class="flex justify-between text-sm text-gray-700"><span>Valor Aceptado:</span><strong class="font-semibold text-gray-900">${formatter.format(item.total_aceptado)}</strong></p>
+                        <p class="flex justify-between text-sm text-gray-700"><span>Valor Refutado:</span><strong class="font-semibold text-gray-900">${formatter.format(item.total_refutado)}</strong></p>
+                        <p class="flex justify-between text-sm text-gray-700"><span>Valor Conciliado:</span><strong class="font-semibold text-gray-900">${formatter.format(item.total_conciliado)}</strong></p>
                     </div>
                 </div>`;
         });
@@ -204,16 +211,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const formatter = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
         
         let tableHTML = `
-            <table class="inconsistency-table">
-                <thead>
+            <table class="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <thead class="bg-gray-100 sticky top-0 z-10">
                     <tr>
-                        <th></th><!-- Columna para el botón de expandir -->
-                        <th>Cuenta de Cobro</th>
-                        <th>Entidad</th>
-                        <th>Facturas Radicadas</th>
-                        <th>Fecha Creación</th>
-                        <th>Fecha Radicación</th>
-                        <th>Valor Aceptado</th>
+                        <th class="py-3 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider"></th><!-- Columna para el botón de expandir -->
+                        <th class="py-3 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Cuenta de Cobro</th>
+                        <th class="py-3 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Entidad</th>
+                        <th class="py-3 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Facturas Radicadas</th>
+                        <th class="py-3 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Fecha Creación</th>
+                        <th class="py-3 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Fecha Radicación</th>
+                        <th class="py-3 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Valor Aceptado</th>
                     </tr>
                 </thead>
                 <tbody>`;
@@ -225,20 +232,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const facturasCount = doc.facturas_por_cuenta;
 
             tableHTML += `
-                <tr class="fila-detalle-maestro">
-                    <td>
-                        ${facturasCount > 0 ? `<button class="btn-expandir-sub" data-gr_docn="${doc.gr_docn}" data-target-id="sub-detalle-${cleanGrDocn}">+</button>` : ''}
+                <tr class="border-b border-gray-200 hover:bg-gray-50 even:bg-gray-50">
+                    <td class="py-3 px-4 whitespace-nowrap">
+                        ${facturasCount > 0 ? `<button class="btn-expandir-sub text-blue-600 hover:text-blue-800 font-bold text-lg focus:outline-none" data-gr_docn="${doc.gr_docn}" data-target-id="sub-detalle-${cleanGrDocn}">+</button>` : ''}
                     </td>
-                    <td>${doc.gr_docn}</td>
-                    <td>${doc.tercero_nombre}</td>
-                    <td><strong>${facturasCount}</strong></td>
-                    <td>${doc.freg}</td>
-                    <td>${doc.fecha_rep}</td>
-                    <td>${formatter.format(doc.vr_tace)}</td>
+                    <td class="py-3 px-4 text-sm text-gray-800 whitespace-nowrap">${doc.gr_docn}</td>
+                    <td class="py-3 px-4 text-sm text-gray-800 whitespace-nowrap">${doc.tercero_nombre}</td>
+                    <td class="py-3 px-4 text-sm text-gray-800 whitespace-nowrap"><strong>${facturasCount}</strong></td>
+                    <td class="py-3 px-4 text-sm text-gray-800 whitespace-nowrap">${doc.freg}</td>
+                    <td class="py-3 px-4 text-sm text-gray-800 whitespace-nowrap">${doc.fecha_rep}</td>
+                    <td class="py-3 px-4 text-sm text-gray-800 whitespace-nowrap">${formatter.format(doc.vr_tace)}</td>
                 </tr>
-                <tr class="fila-sub-detalle" id="sub-detalle-${cleanGrDocn}" style="display: none;">
-                    <td colspan="7">
-                        <div class="sub-detalle-container">Cargando facturas...</div>
+                <tr class="fila-sub-detalle bg-gray-50" id="sub-detalle-${cleanGrDocn}" style="display: none;">
+                    <td colspan="7" class="p-0">
+                        <div class="sub-detalle-container p-4 border-t border-gray-200">Cargando facturas...</div>
                     </td>
                 </tr>`;
             
@@ -248,12 +255,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         tableHTML += `
                 </tbody>
-                <tfoot>
+                <tfoot class="bg-gray-100 sticky bottom-0 z-10">
                     <tr>
-                        <th colspan="3">TOTALES</th>
-                        <th>${totales.facturas}</th>
-                        <th colspan="2"></th>
-                        <th>${formatter.format(totales.aceptado)}</th>
+                        <th colspan="3" class="py-3 px-4 text-left text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">TOTALES</th>
+                        <th class="py-3 px-4 text-left text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">${totales.facturas}</th>
+                        <th colspan="2" class="py-3 px-4"></th>
+                        <th class="py-3 px-4 text-left text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.aceptado)}</th>
                     </tr>
                 </tfoot>
             </table>`;
@@ -271,22 +278,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         let tableHTML = `
-            <table class="sub-details-table">
-                <thead>
+            <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+                <thead class="bg-gray-100">
                     <tr>
-                        <th>Factura</th>
-                        <th>Fecha Glosa</th>
-                        <th>Estatus</th>
+                        <th class="py-2 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Factura</th>
+                        <th class="py-2 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Fecha Glosa</th>
+                        <th class="py-2 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Estatus</th>
                     </tr>
                 </thead>
                 <tbody>`;
 
         data.forEach(item => {
             tableHTML += `
-                <tr>
-                    <td>${item.factura}</td>
-                    <td>${item.fecha_gl}</td>
-                    <td>${item.estatus1}</td>
+                <tr class="border-b border-gray-200 hover:bg-gray-50 even:bg-gray-50">
+                    <td class="py-2 px-4 text-sm text-gray-800 whitespace-nowrap">${item.fc_serie.trim()}${item.fc_docn.trim()}</td>
+                    <td class="py-2 px-4 text-sm text-gray-800 whitespace-nowrap">${item.fecha_gl}</td>
+                    <td class="py-2 px-4 text-sm text-gray-800 whitespace-nowrap">${item.estatus1}</td>
                 </tr>`;
         });
 
@@ -323,17 +330,17 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // --- PASO 3: Construir el HTML con los datos ya ordenados ---
         let tableHTML = `
-            <table class="inconsistency-table">
-                <thead>
+            <table class="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <thead class="bg-gray-100 sticky top-0 z-10">
                     <tr>
-                        <th>No</th>
-                        <th>Glosa</th>
-                        <th>Entidad</th>
-                        <th>Total Ítems</th>
-                        <th>Desglose por estado</th>
-                        <th>Valor Glosado</th>
-                        <th>Valor Aceptado</th>
-                        <th>Total Reclamado</th> <!-- [NUEVO] Cabecera de la columna -->
+                        <th class="py-3 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">No</th>
+                        <th class="py-3 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Glosa</th>
+                        <th class="py-3 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Entidad</th>
+                        <th class="py-3 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Total Ítems</th>
+                        <th class="py-3 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Desglose por estado</th>
+                        <th class="py-3 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Valor Glosado</th>
+                        <th class="py-3 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Valor Aceptado</th>
+                        <th class="py-3 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Total Reclamado</th>
                     </tr>
                 </thead>
                 <tbody>`;
@@ -361,7 +368,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // [NUEVO] Calcular el total para la fila actual
             const totalReclamadoFila = desglose.valorGlosado + desglose.valorAceptado;
             
             const desgloseStr = Object.entries(desglose.estatusCounts)
@@ -369,34 +375,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 .join(', ');
 
             tableHTML += `
-                <tr>
-                    <td>${numeroFila++}</td>
-                    <td>${documento}</td>
-                    <td>${nombreTercero}</td>
-                    <td>${totalItems}</td>
-                    <td>${desgloseStr}</td>
-                    <td>${formatter.format(desglose.valorGlosado)}</td>
-                    <td>${formatter.format(desglose.valorAceptado)}</td>
-                    <td>${formatter.format(totalReclamadoFila)}</td> <!-- [NUEVO] Celda de la columna -->
+                <tr class="border-b border-gray-200 hover:bg-gray-50 even:bg-gray-50">
+                    <td class="py-2 px-4 text-sm text-gray-800 whitespace-nowrap">${numeroFila++}</td>
+                    <td class="py-2 px-4 text-sm text-gray-800 whitespace-nowrap">${documento}</td>
+                    <td class="py-2 px-4 text-sm text-gray-800 whitespace-nowrap">${nombreTercero}</td>
+                    <td class="py-2 px-4 text-sm text-gray-800 whitespace-nowrap">${totalItems}</td>
+                    <td class="py-2 px-4 text-sm text-gray-800 whitespace-nowrap">${desgloseStr}</td>
+                    <td class="py-2 px-4 text-sm text-gray-800 whitespace-nowrap">${formatter.format(desglose.valorGlosado)}</td>
+                    <td class="py-2 px-4 text-sm text-gray-800 whitespace-nowrap">${formatter.format(desglose.valorAceptado)}</td>
+                    <td class="py-2 px-4 text-sm text-gray-800 whitespace-nowrap">${formatter.format(totalReclamadoFila)}</td>
                 </tr>`;
 
-            // Acumular para los totales generales
             totales.items += totalItems;
             totales.glosado += desglose.valorGlosado;
             totales.aceptado += desglose.valorAceptado;
-            totales.reclamado += totalReclamadoFila; // Acumular el nuevo total
+            totales.reclamado += totalReclamadoFila;
         });
         
         tableHTML += '</tbody>';
         tableHTML += `
-            <tfoot>
+            <tfoot class="bg-gray-100 sticky bottom-0 z-10">
                 <tr>
-                    <th colspan="3">TOTALES</th>
-                    <th>${totales.items.toLocaleString('es-CO')}</th>
-                    <th></th>
-                    <th>${formatter.format(totales.glosado)}</th>
-                    <th>${formatter.format(totales.aceptado)}</th>
-                    <th>${formatter.format(totales.reclamado)}</th> <!-- [NUEVO] Celda del total general -->
+                    <th colspan="3" class="py-3 px-4 text-left text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">TOTALES</th>
+                    <th class="py-3 px-4 text-left text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">${totales.items.toLocaleString('es-CO')}</th>
+                    <th class="py-3 px-4"></th>
+                    <th class="py-3 px-4 text-left text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.glosado)}</th>
+                    <th class="py-3 px-4 text-left text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.aceptado)}</th>
+                    <th class="py-3 px-4 text-left text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.reclamado)}</th>
                 </tr>
             </tfoot>`;
         tableHTML += '</table>';
@@ -413,72 +418,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     navButtons.forEach(button => {
         button.addEventListener('click', () => {
-            navButtons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
+            navButtons.forEach(btn => {
+                btn.classList.remove('bg-blue-700', 'hover:bg-blue-800', 'active:bg-blue-900');
+                btn.classList.add('bg-blue-500', 'hover:bg-blue-600');
+            });
+            button.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+            button.classList.add('bg-blue-700', 'hover:bg-blue-800', 'active:bg-blue-900');
             activeReport = button.dataset.report;
+            // Cargar el reporte solo si hay fechas seleccionadas, de lo contrario, mostrar mensaje
             if (fechaInicioInput.value && fechaFinInput.value) {
                 fetchReporte(activeReport, fechaInicioInput.value, fechaFinInput.value);
+            } else {
+                dashboardContainer.innerHTML = '<div class="col-span-full text-center text-gray-500 p-8 bg-gray-50 rounded-lg shadow-inner">Por favor, seleccione un rango de fechas y genere un reporte.</div>';
             }
         });
     });
-
-    // Delegación de eventos para clicks en una tarjeta
-    dashboardContainer.addEventListener('click', (event) => {
-        const card = event.target.closest('.item-card');
-        if (card && card.dataset.responsable) {
-            const responsable = card.dataset.responsable;
-            fetchDetalles(responsable);
-        }
-    });
-
-    // [NUEVO] Delegación de eventos para expandir sub-detalles en el modal
-    detallesListDiv.addEventListener('click', async (event) => {
-        const expandButton = event.target.closest('.btn-expandir-sub');
-        if (!expandButton) return; // Si no se hizo clic en un botón de expandir, no hacer nada
-
-        const gr_docn = expandButton.dataset.gr_docn;
-        const targetId = expandButton.dataset.targetId;
-        const subDetailRow = document.getElementById(targetId);
-
-        if (!subDetailRow) return;
-
-        // Alternar visibilidad de la fila de sub-detalles
-        const isVisible = subDetailRow.style.display !== 'none';
-        subDetailRow.style.display = isVisible ? 'none' : '';
-        expandButton.textContent = isVisible ? '+' : '-';
-
-        // Cargar datos solo la primera vez que se expande
-        const isLoaded = expandButton.dataset.loaded === 'true';
-        if (!isVisible && !isLoaded) {
-            const subDetailContainer = subDetailRow.querySelector('.sub-detalle-container');
-            try {
-                const response = await fetch(`api/reporte_erp_subdetalles.php?gr_docn=${encodeURIComponent(gr_docn)}`);
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`Error del servidor: ${errorText}`);
-                }
-                
-                const subDetallesData = await response.json();
-                renderERPSubDetalles(subDetallesData, subDetailContainer);
-                expandButton.dataset.loaded = 'true'; // Marcar como cargado
-
-            } catch (error) {
-                subDetailContainer.innerHTML = `<p class="error" style="text-align:center; padding: 1rem;">${error.message}</p>`;
-            }
-        }
-    });
-
-    // Eventos para cerrar el modal de detalles
-    if (closeDetallesModalButton) {
-        closeDetallesModalButton.addEventListener('click', () => modalDetalles.style.display = 'none');
-    }
-    if (modalDetalles) {
-        modalDetalles.addEventListener('click', (event) => {
-            if (event.target === modalDetalles) { modalDetalles.style.display = 'none'; }
-        });
-    }
 
     // --- 5. INICIALIZACIÓN ---
     setDefaultDates();
-    dashboardContainer.innerHTML = '<div class="no-results">Por favor, seleccione un rango de fechas y genere un reporte.</div>';
+    // Inicializar el estado activo del botón de Ingreso al cargar la página
+    const initialActiveButton = document.querySelector(`.nav-button[data-report="${activeReport}"]`);
+    if (initialActiveButton) {
+        initialActiveButton.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+        initialActiveButton.classList.add('bg-blue-700', 'hover:bg-blue-800', 'active:bg-blue-900');
+    }
+    dashboardContainer.innerHTML = '<div class="col-span-full text-center text-gray-500 p-8 bg-gray-50 rounded-lg shadow-inner">Por favor, seleccione un rango de fechas y genere un reporte.</div>';
 });

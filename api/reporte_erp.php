@@ -1,6 +1,5 @@
 <?php
-// api/reporte_erp.php (Versión con Procesamiento en PHP)
-ini_set('memory_limit', '512M');
+// api/reporte_erp.php (Versión Final - Lógica Original con Mejoras)
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 header('Content-Type: application/json');
@@ -14,8 +13,8 @@ try {
     $fecha_inicio_vfp = "{^{$fecha_inicio}}";
     $fecha_fin_vfp = "{^{$fecha_fin}}";
 
-    // 2. CONSULTA SIMPLE CON LEFT JOIN
-    $sql = "SELECT rec.gr_docn, rec.tercero, rec.freg, rec.fecha_rep, rec.quien, rec.vr_tref, rec.vr_tace, rec.vr_tcon, rec.observac, red.fc_serie, red.fc_docn, red.estatus1 FROM gema10.d/salud/datos/glo_rec rec LEFT JOIN gema10.d/salud/datos/glo_red red ON rec.gr_docn = red.gr_docn WHERE BETWEEN(rec.freg, {$fecha_inicio_vfp}, {$fecha_fin_vfp}) AND NOT ('ANULADO' $ UPPER(rec.observac) OR 'ANULADA' $ UPPER(rec.observac)) AND rec.fecha_rep > { / / }";
+    // 2. CONSULTA ÚNICA CON LEFT JOIN (Lógica original que VFP puede manejar)
+    $sql = "rec.gr_docn, rec.tercero, rec.freg, rec.fecha_rep, rec.quien, rec.vr_tref, rec.vr_tace, rec.vr_tcon, rec.observac, red.fc_serie, red.fc_docn, red.estatus1 FROM gema10.d/salud/datos/glo_rec rec LEFT JOIN gema10.d/salud/datos/glo_red red ON rec.gr_docn = red.gr_docn WHERE BETWEEN(rec.freg, {$fecha_inicio_vfp}, {$fecha_fin_vfp}) AND NOT ('ANULADO' $ UPPER(rec.observac) OR 'ANULADA' $ UPPER(rec.observac)) AND !EMPTY(rec.fecha_rep)";
     $raw_results = queryApiGema($sql);
 
     if (empty($raw_results)) {
@@ -23,13 +22,18 @@ try {
         exit;
     }
 
-    // 3. PROCESAMIENTO EN PHP
+    // 3. PROCESAMIENTO EN PHP (Lógica original para de-duplicar y contar)
     $cuentas_de_cobro = [];
     $seen_invoices = [];
 
     // --- Primera pasada: Agrupar por cuenta de cobro y contar facturas únicas ---
     foreach ($raw_results as $row) {
         $gr_docn = trim($row['gr_docn']);
+        // [MEJORA] Ignorar registros sin un gr_docn válido
+        if (empty($gr_docn)) {
+            continue;
+        }
+
         if (!isset($cuentas_de_cobro[$gr_docn])) {
             $cuentas_de_cobro[$gr_docn] = [
                 'gr_docn' => $gr_docn,
@@ -55,6 +59,19 @@ try {
         }
     }
 
+    // --- Obtener nombres reales de los responsables (quien) ---
+    $quien_aliases = array_unique(array_column($cuentas_de_cobro, 'responsable')); // 'responsable' holds the 'quien' alias
+    $mapa_quien_nombres = [];
+    if (!empty($quien_aliases)) {
+        // VFP IN clause for strings needs single quotes
+        $in_values_quien = "'" . implode("','", array_map('trim', $quien_aliases)) . "'";
+        $sql_quien_names = "id, nombre FROM gema10.d/dgen/datos/maopera2 WHERE id IN ({$in_values_quien})";
+        $quien_data = queryApiGema($sql_quien_names);
+        foreach ($quien_data as $operador) {
+            $mapa_quien_nombres[trim($operador['id'])] = trim($operador['nombre']);
+        }
+    }
+
     // --- Obtener nombres de terceros ---
     $codigos_terceros = array_unique(array_column($cuentas_de_cobro, 'tercero'));
     $mapa_nombres = [];
@@ -73,7 +90,11 @@ try {
     $detalle_mapa = [];
 
     foreach ($cuentas_de_cobro as $doc) {
-        $responsable = $doc['responsable'];
+        $responsable_alias = $doc['responsable']; // Obtener el alias
+        // Usar el nombre real si se encuentra, de lo contrario, mantener el alias
+        $responsable = $mapa_quien_nombres[$responsable_alias] ?? $responsable_alias;
+        $doc['responsable'] = $responsable; // Actualizar el array doc para detalle_mapa
+
         $doc['tercero_nombre'] = $mapa_nombres[$doc['tercero']] ?? $doc['tercero'];
 
         if (!isset($detalle_mapa[$responsable])) { $detalle_mapa[$responsable] = []; }
