@@ -32,7 +32,7 @@ body {
 }
 
 main {
-    max-width: 1400px;
+    max-width: 95%;
     margin: 0 auto;
 }
 
@@ -151,13 +151,21 @@ form button:hover {
     border-color: var(--color-primary);
 }
 
+.card-header {
+    min-height: 90px; /* Aumentado para nombres largos */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .card-header h3 {
     font-family: var(--font-heading);
     font-size: 1.25rem;
     font-weight: 600;
     margin: 0;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid var(--color-border);
+    padding: 0; /* El padding se maneja en el contenedor */
+    text-align: center;
+    /* El borde lo maneja la clase 'border-b' en el div contenedor */
 }
 
 .card-section h4 {

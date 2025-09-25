@@ -90,17 +90,14 @@ document.addEventListener('DOMContentLoaded', () => {
         itemsData.forEach(item => {
             let desgloseHTML = '';
             if (item.desglose_ratificacion) {
+                // Mostrar todos los estados, incluso si son cero. Añadir flex para la alineación.
                 for (const [key, value] of Object.entries(item.desglose_ratificacion)) {
-                    if (value.cantidad > 0) {
-                        desgloseHTML += `<p><span>${key.toUpperCase()}</span><span><strong>${value.cantidad}</strong> / ${value.valor}</span></p>`;
-                    }
+                    desgloseHTML += `<p class="flex justify-between text-sm text-gray-700"><span>${key.toUpperCase()}</span><strong class="font-semibold text-gray-900">${value.cantidad} / ${value.valor}</strong></p>`;
                 }
             }
-            if (desgloseHTML === '') { desgloseHTML = '<p>No hay desglose para este período.</p>'; }
-
             dashboardContainer.innerHTML += `
                 <div class="item-card bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 ease-in-out cursor-pointer border border-gray-200 hover:border-blue-500" data-responsable="${item.responsable}">
-                    <div class="p-4 border-b border-gray-200 bg-gray-50">
+                    <div class="card-header p-4 border-b border-gray-200 bg-gray-50">
                         <h3 class="text-lg font-montserrat font-semibold text-gray-800">${item.responsable}</h3>
                     </div>
                     <div class="p-4 space-y-3">
@@ -188,7 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
         data.forEach(item => {
             dashboardContainer.innerHTML += `
                 <div class="item-card bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 ease-in-out cursor-pointer border border-gray-200 hover:border-blue-500" data-responsable="${item.responsable}">
-                    <div class="p-4 border-b border-gray-200 bg-gray-50">
+                    <div class="card-header p-4 border-b border-gray-200 bg-gray-50">
                         <h3 class="text-lg font-montserrat font-semibold text-gray-800">${item.responsable}</h3>
                     </div>
                     <div class="p-4 space-y-3">
@@ -214,18 +211,23 @@ document.addEventListener('DOMContentLoaded', () => {
             <table class="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden">
                 <thead class="bg-gray-100 sticky top-0 z-10">
                     <tr>
-                        <th class="py-3 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider"></th><!-- Columna para el botón de expandir -->
-                        <th class="py-3 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Cuenta de Cobro</th>
-                        <th class="py-3 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Entidad</th>
-                        <th class="py-3 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Facturas Radicadas</th>
-                        <th class="py-3 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Fecha Creación</th>
-                        <th class="py-3 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Fecha Radicación</th>
-                        <th class="py-3 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Valor Aceptado</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider"></th><!-- Columna para el botón de expandir -->
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">No.</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Cuenta de Cobro</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Entidad</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Facturas Radicadas</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Fecha Creación</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Fecha Radicación</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Valor Refutado</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Valor Aceptado</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Valor Conciliado</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Observación</th>
                     </tr>
                 </thead>
                 <tbody>`;
 
-        const totales = { facturas: 0, aceptado: 0 };
+        const totales = { facturas: 0, refutado: 0, aceptado: 0, conciliado: 0 };
+        let rowNum = 1;
 
         documentos.forEach(doc => {
             const cleanGrDocn = doc.gr_docn.replace(/[^a-zA-Z0-9]/g, '-');
@@ -233,34 +235,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
             tableHTML += `
                 <tr class="border-b border-gray-200 hover:bg-gray-50 even:bg-gray-50">
-                    <td class="py-3 px-4 whitespace-nowrap">
+                    <td class="py-3 px-4 text-center whitespace-nowrap">
                         ${facturasCount > 0 ? `<button class="btn-expandir-sub text-blue-600 hover:text-blue-800 font-bold text-lg focus:outline-none" data-gr_docn="${doc.gr_docn}" data-target-id="sub-detalle-${cleanGrDocn}">+</button>` : ''}
                     </td>
-                    <td class="py-3 px-4 text-sm text-gray-800 whitespace-nowrap">${doc.gr_docn}</td>
-                    <td class="py-3 px-4 text-sm text-gray-800 whitespace-nowrap">${doc.tercero_nombre}</td>
-                    <td class="py-3 px-4 text-sm text-gray-800 whitespace-nowrap"><strong>${facturasCount}</strong></td>
-                    <td class="py-3 px-4 text-sm text-gray-800 whitespace-nowrap">${doc.freg}</td>
-                    <td class="py-3 px-4 text-sm text-gray-800 whitespace-nowrap">${doc.fecha_rep}</td>
-                    <td class="py-3 px-4 text-sm text-gray-800 whitespace-nowrap">${formatter.format(doc.vr_tace)}</td>
+                    <td class="py-3 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${rowNum++}</td>
+                    <td class="py-3 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${doc.gr_docn}</td>
+                    <td class="py-3 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${doc.tercero_nombre}</td>
+                    <td class="py-3 px-4 text-center text-sm text-gray-800 whitespace-nowrap"><strong>${facturasCount}</strong></td>
+                    <td class="py-3 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${doc.freg}</td>
+                    <td class="py-3 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${doc.fecha_rep}</td>
+                    <td class="py-3 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${formatter.format(doc.vr_tref)}</td>
+                    <td class="py-3 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${formatter.format(doc.vr_tace)}</td>
+                    <td class="py-3 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${formatter.format(doc.vr_tcon)}</td>
+                    <td class="py-3 px-4 text-center text-sm text-gray-800" style="max-width: 200px; white-space: normal;">${doc.observac}</td>
                 </tr>
                 <tr class="fila-sub-detalle bg-gray-50" id="sub-detalle-${cleanGrDocn}" style="display: none;">
-                    <td colspan="7" class="p-0">
+                    <td colspan="11" class="p-0">
                         <div class="sub-detalle-container p-4 border-t border-gray-200">Cargando facturas...</div>
                     </td>
                 </tr>`;
             
             totales.facturas += facturasCount;
+            totales.refutado += doc.vr_tref;
             totales.aceptado += doc.vr_tace;
+            totales.conciliado += doc.vr_tcon;
         });
 
         tableHTML += `
                 </tbody>
                 <tfoot class="bg-gray-100 sticky bottom-0 z-10">
                     <tr>
-                        <th colspan="3" class="py-3 px-4 text-left text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">TOTALES</th>
-                        <th class="py-3 px-4 text-left text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">${totales.facturas}</th>
+                        <th colspan="4" class="py-3 px-4 text-center text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">TOTALES</th>
+                        <th class="py-3 px-4 text-center text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">${totales.facturas}</th>
                         <th colspan="2" class="py-3 px-4"></th>
-                        <th class="py-3 px-4 text-left text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.aceptado)}</th>
+                        <th class="py-3 px-4 text-center text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.refutado)}</th>
+                        <th class="py-3 px-4 text-center text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.aceptado)}</th>
+                        <th class="py-3 px-4 text-center text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.conciliado)}</th>
+                        <th class="py-3 px-4"></th>
                     </tr>
                 </tfoot>
             </table>`;
@@ -281,19 +292,22 @@ document.addEventListener('DOMContentLoaded', () => {
             <table class="min-w-full bg-white border border-gray-200 rounded-lg">
                 <thead class="bg-gray-100">
                     <tr>
-                        <th class="py-2 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Factura</th>
-                        <th class="py-2 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Fecha Glosa</th>
-                        <th class="py-2 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Estatus</th>
+                        <th class="py-2 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">No.</th>
+                        <th class="py-2 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Factura</th>
+                        <th class="py-2 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Fecha Glosa</th>
+                        <th class="py-2 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Estatus</th>
                     </tr>
                 </thead>
                 <tbody>`;
-
+        
+        let rowNum = 1;
         data.forEach(item => {
             tableHTML += `
                 <tr class="border-b border-gray-200 hover:bg-gray-50 even:bg-gray-50">
-                    <td class="py-2 px-4 text-sm text-gray-800 whitespace-nowrap">${item.fc_serie.trim()}${item.fc_docn.trim()}</td>
-                    <td class="py-2 px-4 text-sm text-gray-800 whitespace-nowrap">${item.fecha_gl}</td>
-                    <td class="py-2 px-4 text-sm text-gray-800 whitespace-nowrap">${item.estatus1}</td>
+                    <td class="py-2 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${rowNum++}</td>
+                    <td class="py-2 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${item.fc_serie.trim()}${item.fc_docn.trim()}</td>
+                    <td class="py-2 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${item.fecha_gl}</td>
+                    <td class="py-2 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${item.estatus1}</td>
                 </tr>`;
         });
 
@@ -333,14 +347,14 @@ document.addEventListener('DOMContentLoaded', () => {
             <table class="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden">
                 <thead class="bg-gray-100 sticky top-0 z-10">
                     <tr>
-                        <th class="py-3 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">No</th>
-                        <th class="py-3 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Glosa</th>
-                        <th class="py-3 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Entidad</th>
-                        <th class="py-3 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Total Ítems</th>
-                        <th class="py-3 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Desglose por estado</th>
-                        <th class="py-3 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Valor Glosado</th>
-                        <th class="py-3 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Valor Aceptado</th>
-                        <th class="py-3 px-4 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Total Reclamado</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">No</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Glosa</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Entidad</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Total Ítems</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Desglose por estado</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Valor Glosado</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Valor Aceptado</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Total Reclamado</th>
                     </tr>
                 </thead>
                 <tbody>`;
@@ -376,14 +390,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             tableHTML += `
                 <tr class="border-b border-gray-200 hover:bg-gray-50 even:bg-gray-50">
-                    <td class="py-2 px-4 text-sm text-gray-800 whitespace-nowrap">${numeroFila++}</td>
-                    <td class="py-2 px-4 text-sm text-gray-800 whitespace-nowrap">${documento}</td>
-                    <td class="py-2 px-4 text-sm text-gray-800 whitespace-nowrap">${nombreTercero}</td>
-                    <td class="py-2 px-4 text-sm text-gray-800 whitespace-nowrap">${totalItems}</td>
-                    <td class="py-2 px-4 text-sm text-gray-800 whitespace-nowrap">${desgloseStr}</td>
-                    <td class="py-2 px-4 text-sm text-gray-800 whitespace-nowrap">${formatter.format(desglose.valorGlosado)}</td>
-                    <td class="py-2 px-4 text-sm text-gray-800 whitespace-nowrap">${formatter.format(desglose.valorAceptado)}</td>
-                    <td class="py-2 px-4 text-sm text-gray-800 whitespace-nowrap">${formatter.format(totalReclamadoFila)}</td>
+                    <td class="py-2 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${numeroFila++}</td>
+                    <td class="py-2 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${documento}</td>
+                    <td class="py-2 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${nombreTercero}</td>
+                    <td class="py-2 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${totalItems}</td>
+                    <td class="py-2 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${desgloseStr}</td>
+                    <td class="py-2 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${formatter.format(desglose.valorGlosado)}</td>
+                    <td class="py-2 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${formatter.format(desglose.valorAceptado)}</td>
+                    <td class="py-2 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${formatter.format(totalReclamadoFila)}</td>
                 </tr>`;
 
             totales.items += totalItems;
@@ -396,12 +410,12 @@ document.addEventListener('DOMContentLoaded', () => {
         tableHTML += `
             <tfoot class="bg-gray-100 sticky bottom-0 z-10">
                 <tr>
-                    <th colspan="3" class="py-3 px-4 text-left text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">TOTALES</th>
-                    <th class="py-3 px-4 text-left text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">${totales.items.toLocaleString('es-CO')}</th>
+                    <th colspan="3" class="py-3 px-4 text-center text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">TOTALES</th>
+                    <th class="py-3 px-4 text-center text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">${totales.items.toLocaleString('es-CO')}</th>
                     <th class="py-3 px-4"></th>
-                    <th class="py-3 px-4 text-left text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.glosado)}</th>
-                    <th class="py-3 px-4 text-left text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.aceptado)}</th>
-                    <th class="py-3 px-4 text-left text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.reclamado)}</th>
+                    <th class="py-3 px-4 text-center text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.glosado)}</th>
+                    <th class="py-3 px-4 text-center text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.aceptado)}</th>
+                    <th class="py-3 px-4 text-center text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.reclamado)}</th>
                 </tr>
             </tfoot>`;
         tableHTML += '</table>';
@@ -432,6 +446,70 @@ document.addEventListener('DOMContentLoaded', () => {
                 dashboardContainer.innerHTML = '<div class="col-span-full text-center text-gray-500 p-8 bg-gray-50 rounded-lg shadow-inner">Por favor, seleccione un rango de fechas y genere un reporte.</div>';
             }
         });
+    });
+
+    // Event listener para abrir el modal de detalles al hacer clic en una tarjeta.
+    dashboardContainer.addEventListener('click', (e) => {
+        const card = e.target.closest('.item-card');
+        if (card && card.dataset.responsable) {
+            fetchDetalles(card.dataset.responsable);
+        }
+    });
+
+    // Event listeners para cerrar el modal.
+    const closeModal = () => {
+        modalDetalles.classList.add('hidden');
+        modalDetalles.classList.remove('flex');
+    };
+
+    closeDetallesModalButton.addEventListener('click', closeModal);
+    modalDetalles.addEventListener('click', (e) => {
+        // Se cierra si se hace clic en el overlay (el fondo oscuro).
+        if (e.target === modalDetalles) {
+            closeModal();
+        }
+    });
+
+    // Event listener para expandir/colapsar sub-detalles en el modal de ERP.
+    detallesListDiv.addEventListener('click', async (e) => {
+        const expandButton = e.target.closest('.btn-expandir-sub');
+        if (expandButton) {
+            const grDocn = expandButton.dataset.gr_docn;
+            const targetId = expandButton.dataset.targetId;
+            const subDetalleRow = document.getElementById(targetId);
+
+            if (!subDetalleRow) return; // Guardia de seguridad.
+
+            const subDetalleContainer = subDetalleRow.querySelector('.sub-detalle-container');
+            const isVisible = subDetalleRow.style.display !== 'none';
+
+            if (!isVisible) {
+                subDetalleRow.style.display = 'table-row';
+                expandButton.textContent = '-';
+                
+                // Cargar datos solo si no se han cargado antes.
+                if (subDetalleContainer.innerHTML.includes('Cargando')) {
+                    try {
+                        const response = await fetch(`api/reporte_erp_subdetalles.php?gr_docn=${grDocn}`);
+                        if (!response.ok) {
+                            const errorText = await response.text();
+                            throw new Error(`Error al cargar sub-detalles: ${errorText}`);
+                        }
+                        const data = await response.json();
+                        if (data.error) {
+                            throw new Error(data.details || data.error);
+                        }
+                        renderERPSubDetalles(data, subDetalleContainer);
+                    } catch (error) {
+                        console.error('Error fetching sub-details:', error);
+                        subDetalleContainer.innerHTML = `<p class="error" style="text-align:center; padding: 1rem;">${error.message}</p>`;
+                    }
+                }
+            } else {
+                subDetalleRow.style.display = 'none';
+                expandButton.textContent = '+';
+            }
+        }
     });
 
     // --- 5. INICIALIZACIÓN ---

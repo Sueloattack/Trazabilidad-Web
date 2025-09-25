@@ -17,7 +17,7 @@ try {
     // CLAVES DE DESGLOSE A ESPERAR (minúsculas)
     // Usamos AE si esa lógica también debe existir en analistas. Si no, quítalo. 
     // Los 4 que vienen del estatus 1 y la clave "ae" por si acaso.
-    $desglose_keys = ['c1', 'c2', 'c3', 'co', 'ai', 'ae']; 
+    $desglose_keys = ['c1', 'c2', 'c3', 'co', 'ai']; 
 
     $estatus_aceptado_analistas = 'ai';
 
