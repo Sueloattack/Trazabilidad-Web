@@ -11,9 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Selectores para el modal de Detalles de Factura (único modal ahora)
     const modalDetalles = document.getElementById('modal-detalles');
-    const closeDetallesModalButton = document.getElementById('close-detalles-modal-button');
+    const closeDetallebaseodalButton = document.getElementById('close-detalles-modal-button');
     const detallesListDiv = document.getElementById('detalles-list');
-    const detallesModalTitle = document.getElementById('detalles-modal-title');
+    const detallebaseodalTitle = document.getElementById('detalles-modal-title');
 
     // --- 2. ESTADO DE LA APLICACIÓN ---
     let activeReport = 'ingreso';
@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
             switch (reporte) {
                 case 'ingreso':
                 case 'analistas':
-                    renderReporteDetallado(responseData.data);
+                    renderReporteDetallado(responseData.data, reporte);
                     break;
                 case 'erp':
                     renderReporteERP(responseData.data);
@@ -86,30 +86,31 @@ document.addEventListener('DOMContentLoaded', () => {
     /**
      * Renderiza las tarjetas de datos detalladas para los reportes.
      */
-    const renderReporteDetallado = (itemsData) => {
+    const renderReporteDetallado = (itemsData, reporte) => {
         itemsData.forEach(item => {
+            const valorAceptadoLabel = reporte === 'ingreso' ? 'Valor levantado por la ERP' : 'Valor Aceptado';
             let desgloseHTML = '';
             if (item.desglose_ratificacion) {
                 // Mostrar todos los estados, incluso si son cero. Añadir flex para la alineación.
                 for (const [key, value] of Object.entries(item.desglose_ratificacion)) {
-                    desgloseHTML += `<p class="flex justify-between text-sm text-gray-700"><span>${key.toUpperCase()}</span><strong class="font-semibold text-gray-900">${value.cantidad} / ${value.valor}</strong></p>`;
+                    desgloseHTML += `<p class="flex justify-between text-base text-gray-700"><span>${key.toUpperCase()}</span><strong class="font-semibold text-gray-900">${value.cantidad} / ${value.valor}</strong></p>`;
                 }
             }
             dashboardContainer.innerHTML += `
                 <div class="item-card bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 ease-in-out cursor-pointer border border-gray-200 hover:border-blue-500" data-responsable="${item.responsable}">
-                    <div class="card-header p-4 border-b border-gray-200 bg-gray-50">
-                        <h3 class="text-lg font-montserrat font-semibold text-gray-800">${item.responsable}</h3>
+                    <div class="card-header p-4 border-b border-gray-200 bg-gray-50 flex items-center justify-center h-24">
+                        <h3 class="text-xl font-montserrat font-semibold text-gray-800 text-center">${item.responsable}</h3>
                     </div>
                     <div class="p-4 space-y-3">
                         <h4 class="text-xs font-montserrat font-medium text-gray-500 uppercase tracking-wider">Resumen General</h4>
-                        <p class="flex justify-between text-sm text-gray-700"><span>Cantidad Ingresada:</span><strong class="font-semibold text-gray-900">${item.cantidad_glosas_ingresadas}</strong></p>
-                        <p class="flex justify-between text-sm text-gray-700"><span>Valor Total Ingresado:</span><strong class="font-semibold text-gray-900">${item.valor_total_glosas}</strong></p>
+                        <p class="flex justify-between text-base text-gray-700"><span>Cantidad Ingresada:</span><strong class="font-semibold text-gray-900">${item.cantidad_glosas_ingresadas}</strong></p>
+                        <p class="flex justify-between text-base text-gray-700"><span>Valor Total Ingresado:</span><strong class="font-semibold text-gray-900">${item.valor_total_glosas}</strong></p>
                     </div>
                     <hr class="border-gray-200 mx-4">
                     <div class="p-4 space-y-3">
                         <h4 class="text-xs font-montserrat font-medium text-gray-500 uppercase tracking-wider">Promedios (${item.promedios.periodo})</h4>
-                        <p class="flex justify-between text-sm text-gray-700"><span>Promedio Cantidad:</span><strong class="font-semibold text-gray-900">${item.promedios.promedio_cantidad}</strong></p>
-                        <p class="flex justify-between text-sm text-gray-700"><span>Promedio Valor:</span><strong class="font-semibold text-gray-900">${item.promedios.promedio_valor}</strong></p>
+                        <p class="flex justify-between text-base text-gray-700"><span>Promedio Cantidad:</span><strong class="font-semibold text-gray-900">${item.promedios.promedio_cantidad}</strong></p>
+                        <p class="flex justify-between text-base text-gray-700"><span>Promedio Valor:</span><strong class="font-semibold text-gray-900">${item.promedios.promedio_valor}</strong></p>
                     </div>
                     <hr class="border-gray-200 mx-4">
                     <div class="p-4 space-y-3">
@@ -121,10 +122,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <!-- ============ NUEVA SECCIÓN DE TOTALES ============ -->
                     <div class="p-4 space-y-3 bg-blue-50 rounded-b-lg">
                         <h4 class="text-xs font-montserrat font-medium text-blue-700 uppercase tracking-wider">Totales de Ítems</h4>
-                        <p class="flex justify-between text-sm text-blue-800"><span>Total Ítems:</span><strong class="font-bold">${item.total_items}</strong></p>
-                        <p class="flex justify-between text-sm text-blue-800"><span>Valor Glosado:</span><strong class="font-bold">${item.valor_glosado}</strong></p>
-                        <p class="flex justify-between text-sm text-blue-800"><span>Valor Aceptado:</span><strong class="font-bold">${item.valor_aceptado}</strong></p>
-                        <p class="flex justify-between text-sm text-blue-800"><span>Valor Total:</span><strong class="font-bold">${item.valor_total_items}</strong></p>
+                        <p class="flex justify-between text-base text-blue-800"><span>Total Ítems:</span><strong class="font-bold">${item.total_items}</strong></p>
+                        <p class="flex justify-between text-base text-blue-800"><span>Valor Glosado:</span><strong class="font-bold">${item.valor_glosado}</strong></p>
+                        <p class="flex justify-between text-base text-blue-800"><span>${valorAceptadoLabel}:</span><strong class="font-bold">${item.valor_aceptado}</strong></p>
+                        <p class="flex justify-between text-base text-blue-800"><span>Valor Total:</span><strong class="font-bold">${item.valor_total_items}</strong></p>
                     </div>
                 </div>`;
         });
@@ -134,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
      * Muestra el modal y carga los detalles según el tipo de reporte.
      */
     const fetchDetalles = async (responsable) => {
-        detallesModalTitle.textContent = `Detalle de Documentos para ${responsable}`;
+        detallebaseodalTitle.textContent = `Detalle de Documentos para ${responsable}`;
         detallesListDiv.innerHTML = '<div class="text-center text-gray-500 p-8 bg-gray-50 rounded-lg shadow-inner">Cargando detalles...</div>';
         modalDetalles.classList.remove('hidden');
         modalDetalles.classList.add('flex');
@@ -147,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Lógica bifurcada: ERP usa su propio renderizador, los otros van a la API de nombres.
         if (activeReport === 'erp') {
-            renderERPDetallesModal(detalles);
+            renderERPDetallebaseodal(detalles);
             return;
         }
 
@@ -166,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const mapaNombres = await response.json();
             const estatusAceptado = (activeReport === 'analistas') ? 'ai' : 'ae';
 
-            renderDetallesModal(detalles, mapaNombres, estatusAceptado);
+            renderDetallebaseodal(detalles, mapaNombres, estatusAceptado);
 
         } catch (error) {
             console.error('Error al obtener los detalles:', error);
@@ -185,17 +186,17 @@ document.addEventListener('DOMContentLoaded', () => {
         data.forEach(item => {
             dashboardContainer.innerHTML += `
                 <div class="item-card bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 ease-in-out cursor-pointer border border-gray-200 hover:border-blue-500" data-responsable="${item.responsable}">
-                    <div class="card-header p-4 border-b border-gray-200 bg-gray-50">
-                        <h3 class="text-lg font-montserrat font-semibold text-gray-800">${item.responsable}</h3>
+                    <div class="card-header p-4 border-b border-gray-200 bg-gray-50 flex items-center justify-center h-24">
+                        <h3 class="text-xl font-montserrat font-semibold text-gray-800 text-center">${item.responsable}</h3>
                     </div>
                     <div class="p-4 space-y-3">
                         <h4 class="text-xs font-montserrat font-medium text-gray-500 uppercase tracking-wider">Resumen de Radicación</h4>
-                        <p class="flex justify-between text-sm text-gray-700"><span>Total Cuentas:</span><strong class="font-semibold text-gray-900">${item.total_documentos}</strong></p>
-                        <p class="flex justify-between text-sm text-gray-700"><span>Total Facturas:</span><strong class="font-semibold text-gray-900">${item.total_facturas_radicadas}</strong></p>
+                        <p class="flex justify-between text-base text-gray-700"><span>Total Cuentas:</span><strong class="font-semibold text-gray-900">${item.total_documentos}</strong></p>
+                        <p class="flex justify-between text-base text-gray-700"><span>Total Facturas:</span><strong class="font-semibold text-gray-900">${item.total_facturas_radicadas}</strong></p>
                         <hr class="border-gray-200 my-3">
-                        <p class="flex justify-between text-sm text-gray-700"><span>Valor Aceptado:</span><strong class="font-semibold text-gray-900">${formatter.format(item.total_aceptado)}</strong></p>
-                        <p class="flex justify-between text-sm text-gray-700"><span>Valor Refutado:</span><strong class="font-semibold text-gray-900">${formatter.format(item.total_refutado)}</strong></p>
-                        <p class="flex justify-between text-sm text-gray-700"><span>Valor Conciliado:</span><strong class="font-semibold text-gray-900">${formatter.format(item.total_conciliado)}</strong></p>
+                        <p class="flex justify-between text-base text-gray-700"><span>Valor Aceptado:</span><strong class="font-semibold text-gray-900">${formatter.format(item.total_aceptado)}</strong></p>
+                        <p class="flex justify-between text-base text-gray-700"><span>Valor Refutado:</span><strong class="font-semibold text-gray-900">${formatter.format(item.total_refutado)}</strong></p>
+                        <p class="flex justify-between text-base text-gray-700"><span>Valor Conciliado:</span><strong class="font-semibold text-gray-900">${formatter.format(item.total_conciliado)}</strong></p>
                     </div>
                 </div>`;
         });
@@ -204,7 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
     /**
      * [MODIFICADO] Renderiza el contenido del modal de detalles para el reporte ERP con filas expandibles.
      */
-    const renderERPDetallesModal = (documentos) => {
+    const renderERPDetallebaseodal = (documentos) => {
         const formatter = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
         
         let tableHTML = `
@@ -238,16 +239,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td class="py-3 px-4 text-center whitespace-nowrap">
                         ${facturasCount > 0 ? `<button class="btn-expandir-sub text-blue-600 hover:text-blue-800 font-bold text-lg focus:outline-none" data-gr_docn="${doc.gr_docn}" data-target-id="sub-detalle-${cleanGrDocn}">+</button>` : ''}
                     </td>
-                    <td class="py-3 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${rowNum++}</td>
-                    <td class="py-3 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${doc.gr_docn}</td>
-                    <td class="py-3 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${doc.tercero_nombre}</td>
-                    <td class="py-3 px-4 text-center text-sm text-gray-800 whitespace-nowrap"><strong>${facturasCount}</strong></td>
-                    <td class="py-3 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${doc.freg}</td>
-                    <td class="py-3 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${doc.fecha_rep}</td>
-                    <td class="py-3 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${formatter.format(doc.vr_tref)}</td>
-                    <td class="py-3 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${formatter.format(doc.vr_tace)}</td>
-                    <td class="py-3 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${formatter.format(doc.vr_tcon)}</td>
-                    <td class="py-3 px-4 text-center text-sm text-gray-800" style="max-width: 200px; white-space: normal;">${doc.observac}</td>
+                    <td class="py-3 px-4 text-center text-base text-gray-800 whitespace-nowrap">${rowNum++}</td>
+                    <td class="py-3 px-4 text-center text-base text-gray-800 whitespace-nowrap">${doc.gr_docn}</td>
+                    <td class="py-3 px-4 text-center text-base text-gray-800 whitespace-nowrap">${doc.tercero_nombre}</td>
+                    <td class="py-3 px-4 text-center text-base text-gray-800 whitespace-nowrap"><strong>${facturasCount}</strong></td>
+                    <td class="py-3 px-4 text-center text-base text-gray-800 whitespace-nowrap">${doc.freg}</td>
+                    <td class="py-3 px-4 text-center text-base text-gray-800 whitespace-nowrap">${doc.fecha_rep}</td>
+                    <td class="py-3 px-4 text-center text-base text-gray-800 whitespace-nowrap">${formatter.format(doc.vr_tref)}</td>
+                    <td class="py-3 px-4 text-center text-base text-gray-800 whitespace-nowrap">${formatter.format(doc.vr_tace)}</td>
+                    <td class="py-3 px-4 text-center text-base text-gray-800 whitespace-nowrap">${formatter.format(doc.vr_tcon)}</td>
+                    <td class="py-3 px-4 text-center text-base text-gray-800" style="max-width: 200px; white-space: normal;">${doc.observac}</td>
                 </tr>
                 <tr class="fila-sub-detalle bg-gray-50" id="sub-detalle-${cleanGrDocn}" style="display: none;">
                     <td colspan="11" class="p-0">
@@ -265,12 +266,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 </tbody>
                 <tfoot class="bg-gray-100 sticky bottom-0 z-10">
                     <tr>
-                        <th colspan="4" class="py-3 px-4 text-center text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">TOTALES</th>
-                        <th class="py-3 px-4 text-center text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">${totales.facturas}</th>
+                        <th colspan="4" class="py-3 px-4 text-center text-base font-montserrat font-bold text-gray-800 uppercase tracking-wider">TOTALES</th>
+                        <th class="py-3 px-4 text-center text-base font-montserrat font-bold text-gray-800 uppercase tracking-wider">${totales.facturas}</th>
                         <th colspan="2" class="py-3 px-4"></th>
-                        <th class="py-3 px-4 text-center text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.refutado)}</th>
-                        <th class="py-3 px-4 text-center text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.aceptado)}</th>
-                        <th class="py-3 px-4 text-center text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.conciliado)}</th>
+                        <th class="py-3 px-4 text-center text-base font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.refutado)}</th>
+                        <th class="py-3 px-4 text-center text-base font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.aceptado)}</th>
+                        <th class="py-3 px-4 text-center text-base font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.conciliado)}</th>
                         <th class="py-3 px-4"></th>
                     </tr>
                 </tfoot>
@@ -290,7 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let tableHTML = `
             <table class="min-w-full bg-white border border-gray-200 rounded-lg">
-                <thead class="bg-gray-100">
+                <thead class="bg-gray-100 sticky top-12 z-10">
                     <tr>
                         <th class="py-2 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">No.</th>
                         <th class="py-2 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Factura</th>
@@ -304,10 +305,10 @@ document.addEventListener('DOMContentLoaded', () => {
         data.forEach(item => {
             tableHTML += `
                 <tr class="border-b border-gray-200 hover:bg-gray-50 even:bg-gray-50">
-                    <td class="py-2 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${rowNum++}</td>
-                    <td class="py-2 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${item.fc_serie.trim()}${item.fc_docn.trim()}</td>
-                    <td class="py-2 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${item.fecha_gl}</td>
-                    <td class="py-2 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${item.estatus1}</td>
+                    <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap">${rowNum++}</td>
+                    <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap">${item.fc_serie.trim()}${item.fc_docn.trim()}</td>
+                    <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap">${item.fecha_gl}</td>
+                    <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap">${item.estatus1}</td>
                 </tr>`;
         });
 
@@ -317,13 +318,13 @@ document.addEventListener('DOMContentLoaded', () => {
     
     /**
      * Renderiza el contenido del modal de detalles con los nuevos títulos y formato de datos.
-     * @param {object} detallesMap - El mapa de facturas enriquecido.
+     * @param {object} detallebaseap - El mapa de facturas enriquecido.
      * @param {object} mapaNombres - El diccionario de nombres de terceros.
      */
-    const renderDetallesModal = (detallesMap, mapaNombres,estatusAceptado) => {
+    const renderDetallebaseodal = (detallebaseap, mapaNombres,estatusAceptado) => {
         // --- PASO 1: Procesar y preparar los datos para ordenar ---
         let filasProcesadas = [];
-        for (const [idCompuesto, itemsList] of Object.entries(detallesMap)) {
+        for (const [idCompuesto, itemsList] of Object.entries(detallebaseap)) {
             
             let valorGlosadoNum = 0;
             itemsList.forEach(item => {
@@ -341,6 +342,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- PASO 2: Ordenar el array de filas de mayor a menor Valor Glosado ---
         filasProcesadas.sort((a, b) => b.valorGlosadoNum - a.valorGlosadoNum);
+        const valorAceptadoHeader = activeReport === 'ingreso' ? 'Valor levantado por la erp' : 'Valor Aceptado';
         
         // --- PASO 3: Construir el HTML con los datos ya ordenados ---
         let tableHTML = `
@@ -353,7 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Total Ítems</th>
                         <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Desglose por estado</th>
                         <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Valor Glosado</th>
-                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Valor Aceptado</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">${valorAceptadoHeader}</th>
                         <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Total Reclamado</th>
                     </tr>
                 </thead>
@@ -390,14 +392,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             tableHTML += `
                 <tr class="border-b border-gray-200 hover:bg-gray-50 even:bg-gray-50">
-                    <td class="py-2 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${numeroFila++}</td>
-                    <td class="py-2 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${documento}</td>
-                    <td class="py-2 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${nombreTercero}</td>
-                    <td class="py-2 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${totalItems}</td>
-                    <td class="py-2 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${desgloseStr}</td>
-                    <td class="py-2 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${formatter.format(desglose.valorGlosado)}</td>
-                    <td class="py-2 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${formatter.format(desglose.valorAceptado)}</td>
-                    <td class="py-2 px-4 text-center text-sm text-gray-800 whitespace-nowrap">${formatter.format(totalReclamadoFila)}</td>
+                    <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap">${numeroFila++}</td>
+                    <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap">${documento}</td>
+                    <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap">${nombreTercero}</td>
+                    <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap">${totalItems}</td>
+                    <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap">${desgloseStr}</td>
+                    <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap">${formatter.format(desglose.valorGlosado)}</td>
+                    <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap">${formatter.format(desglose.valorAceptado)}</td>
+                    <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap">${formatter.format(totalReclamadoFila)}</td>
                 </tr>`;
 
             totales.items += totalItems;
@@ -410,12 +412,12 @@ document.addEventListener('DOMContentLoaded', () => {
         tableHTML += `
             <tfoot class="bg-gray-100 sticky bottom-0 z-10">
                 <tr>
-                    <th colspan="3" class="py-3 px-4 text-center text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">TOTALES</th>
-                    <th class="py-3 px-4 text-center text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">${totales.items.toLocaleString('es-CO')}</th>
+                    <th colspan="3" class="py-3 px-4 text-center text-base font-montserrat font-bold text-gray-800 uppercase tracking-wider">TOTALES</th>
+                    <th class="py-3 px-4 text-center text-base font-montserrat font-bold text-gray-800 uppercase tracking-wider">${totales.items.toLocaleString('es-CO')}</th>
                     <th class="py-3 px-4"></th>
-                    <th class="py-3 px-4 text-center text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.glosado)}</th>
-                    <th class="py-3 px-4 text-center text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.aceptado)}</th>
-                    <th class="py-3 px-4 text-center text-sm font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.reclamado)}</th>
+                    <th class="py-3 px-4 text-center text-base font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.glosado)}</th>
+                    <th class="py-3 px-4 text-center text-base font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.aceptado)}</th>
+                    <th class="py-3 px-4 text-center text-base font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.reclamado)}</th>
                 </tr>
             </tfoot>`;
         tableHTML += '</table>';
@@ -462,7 +464,7 @@ document.addEventListener('DOMContentLoaded', () => {
         modalDetalles.classList.remove('flex');
     };
 
-    closeDetallesModalButton.addEventListener('click', closeModal);
+    closeDetallebaseodalButton.addEventListener('click', closeModal);
     modalDetalles.addEventListener('click', (e) => {
         // Se cierra si se hace clic en el overlay (el fondo oscuro).
         if (e.target === modalDetalles) {

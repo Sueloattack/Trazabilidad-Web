@@ -28,14 +28,14 @@
     </script>
 </head>
 <body class="font-lato bg-gray-100 text-gray-800 p-4 sm:p-6 md:p-8">
-    <main class="max-w-screen-xl mx-auto bg-white shadow-lg rounded-xl overflow-hidden">
+    <main class="bg-white shadow-lg rounded-xl overflow-hidden">
         <header class="text-center py-6 px-4 bg-blue-600 text-white">
-            <h1 class="text-3xl font-montserrat font-bold mb-4">Módulo de Reportes</h1>
+            <h1 class="text-3xl font-montserrat font-bold mb-4">Productividad de la oficina de glosas por areas</h1>
             <!-- Menú de Navegación -->
             <nav class="report-nav flex justify-center space-x-4 border-b border-blue-700 pb-2">
                 <button class="nav-button px-6 py-2 rounded-full text-lg font-montserrat font-semibold transition-all duration-200 ease-in-out bg-blue-500 text-white hover:bg-blue-600" data-report="ingreso">Ingreso</button>
-                <button class="nav-button px-6 py-2 rounded-full text-lg font-montserrat font-semibold transition-all duration-200 ease-in-out bg-blue-500 text-white hover:bg-blue-600" data-report="analistas">Analistas</button>
-                <button class="nav-button px-6 py-2 rounded-full text-lg font-montserrat font-semibold transition-all duration-200 ease-in-out bg-blue-500 text-white hover:bg-blue-600" data-report="erp">Radicación ERP</button>
+                <button class="nav-button px-6 py-2 rounded-full text-lg font-montserrat font-semibold transition-all duration-200 ease-in-out bg-blue-500 text-white hover:bg-blue-600" data-report="analistas">Respuesta  </button>
+                <button class="nav-button px-6 py-2 rounded-full text-lg font-montserrat font-semibold transition-all duration-200 ease-in-out bg-blue-500 text-white hover:bg-blue-600" data-report="erp">Radicación</button>
             </nav>
         </header>
 
@@ -62,13 +62,13 @@
     <script src="assets/js/main.js"></script>
 
     <!-- ======== MODAL DE DETALLES DE FACTURA ======== -->
-    <div id="modal-detalles" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4 hidden">
-        <div class="modal-content bg-white rounded-lg shadow-xl max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+    <div id="modal-detalles" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-12 hidden">
+        <div class="modal-content bg-white shadow-xl w-full max-h-[90vh] flex flex-col rounded-lg">
             <div class="modal-header flex justify-between items-center p-4 border-b border-gray-200 bg-gray-50">
                 <h2 id="detalles-modal-title" class="text-xl font-montserrat font-semibold text-gray-800">Detalle de Facturas</h2>
                 <button id="close-detalles-modal-button" class="close-button text-gray-500 hover:text-gray-800 text-3xl leading-none font-semibold">&times;</button>
             </div>
-            <div id="detalles-list" class="modal-body p-4 overflow-y-auto flex-grow">
+            <div id="detalles-list" class= "modal-body overflow-y-auto flex-grow">
                 <!-- El contenido se generará con JavaScript -->
             </div>
         </div>
