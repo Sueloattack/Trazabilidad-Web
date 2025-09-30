@@ -8,6 +8,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const fechaInicioInput = document.getElementById('fecha_inicio');
     const fechaFinInput = document.getElementById('fecha_fin');
     const navButtons = document.querySelectorAll('.nav-button');
+    const radicacionMenu = document.getElementById('radicacion-menu');
+    const radicacionButton = document.getElementById('radicacion-button');
+    const radicacionSubmenu = document.getElementById('radicacion-submenu');
     
     // Selectores para el modal de Detalles de Factura (único modal ahora)
     const modalDetalles = document.getElementById('modal-detalles');
@@ -74,7 +77,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     renderReporteDetallado(responseData.data, reporte);
                     break;
                 case 'erp':
+                case 'erp_proceso':
                     renderReporteERP(responseData.data);
+                    break;
+                case 'glosas_sin_radicar':
+                    renderReporteGlosasSinRadicar(responseData.data);
                     break;
                 default:
                     dashboardContainer.innerHTML += `<div class="col-span-full text-center text-red-600 p-8 bg-red-50 rounded-lg shadow-inner">Tipo de reporte desconocido.</div>`;
@@ -131,27 +138,110 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
     
+    const renderReporteERP = (data) => {
+        const formatter = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
+
+        dashboardContainer.innerHTML = ''; // Limpiar contenido anterior
+
+        data.forEach(item => {
+            dashboardContainer.innerHTML += `
+                <div class="item-card bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 ease-in-out cursor-pointer border border-gray-200 hover:border-blue-500" data-responsable="${item.responsable}">
+                    <div class="card-header p-4 border-b border-gray-200 bg-gray-50 flex items-center justify-center h-24">
+                        <h3 class="text-xl font-montserrat font-semibold text-gray-800 text-center">${item.responsable}</h3>
+                    </div>
+                    <div class="p-4 space-y-3">
+                        <h4 class="text-xs font-montserrat font-medium text-gray-500 uppercase tracking-wider">Resumen de Radicación</h4>
+                        <p class="flex justify-between text-base text-gray-700"><span>Total Cuentas:</span><strong class="font-semibold text-gray-900">${item.total_documentos}</strong></p>
+                        <p class="flex justify-between text-base text-gray-700"><span>Total Facturas:</span><strong class="font-semibold text-gray-900">${item.total_facturas_radicadas}</strong></p>
+                        <hr class="border-gray-200 my-3">
+                        <p class="flex justify-between text-base text-gray-700"><span>Valor Aceptado:</span><strong class="font-semibold text-gray-900">${formatter.format(item.total_aceptado)}</strong></p>
+                        <p class="flex justify-between text-base text-gray-700"><span>Valor Refutado:</span><strong class="font-semibold text-gray-900">${formatter.format(item.total_refutado)}</strong></p>
+                        <p class="flex justify-between text-base text-gray-700"><span>Valor Conciliado:</span><strong class="font-semibold text-gray-900">${formatter.format(item.total_conciliado)}</strong></p>
+                    </div>
+                </div>`;
+        });
+    };
+
+    /**
+     * [NUEVO] Renderiza las tarjetas para el reporte de Facturas sin Radicar.
+     */
+    const renderReporteGlosasSinRadicar = (data) => {
+        dashboardContainer.innerHTML = ''; // Limpiar
+
+        // Ordenar de mayor a menor cantidad de glosas totales
+        data.sort((a, b) => b.total_glosas - a.total_glosas);
+
+        // Calcular y mostrar los totalizadores
+        const totalGlosas = data.reduce((sum, item) => sum + item.total_glosas, 0);
+        const totalConCuenta = data.reduce((sum, item) => sum + item.con_cuenta, 0);
+        const totalSinCuenta = data.reduce((sum, item) => sum + item.sin_cuenta, 0);
+        
+        const totalizadorHTML = `
+            <div class="col-span-full grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 rounded-lg shadow-md">
+                    <h2 class="text-xl font-bold">Total Glosas: ${totalGlosas.toLocaleString('es-CO')}</h2>
+                </div>
+                <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-lg shadow-md">
+                    <h2 class="text-xl font-bold">Con Cuenta: ${totalConCuenta.toLocaleString('es-CO')}</h2>
+                </div>
+                <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-lg shadow-md">
+                    <h2 class="text-xl font-bold">Sin Cuenta: ${totalSinCuenta.toLocaleString('es-CO')}</h2>
+                </div>
+            </div>
+        `;
+        dashboardContainer.innerHTML += totalizadorHTML;
+
+        data.forEach(item => {
+            dashboardContainer.innerHTML += `
+                <div class="item-card bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 ease-in-out cursor-pointer border border-gray-200 hover:border-blue-500" data-responsable="${item.tercero_nombre}">
+                    <div class="card-header p-4 border-b border-gray-200 bg-gray-50 flex items-center justify-center h-20">
+                        <h3 class="text-xl font-montserrat font-semibold text-gray-800 text-center">${item.tercero_nombre}</h3>
+                    </div>
+                    <div class="p-4 space-y-3">
+                        <h4 class="text-center text-xs font-montserrat font-medium text-gray-500 uppercase tracking-wider mb-2">Glosas Pendientes de Radicar</h4>
+                        <p class="flex justify-between text-lg text-gray-800"><span>Total:</span><strong class="font-bold text-red-600 text-2xl">${item.total_glosas.toLocaleString('es-CO')}</strong></p>
+                        <hr class="my-2">
+                        <p class="flex justify-between text-base text-gray-700"><span>Con Cuenta de Cobro:</span><strong class="font-semibold text-green-600">${item.con_cuenta.toLocaleString('es-CO')}</strong></p>
+                        <p class="flex justify-between text-base text-gray-700"><span>Sin Cuenta de Cobro:</span><strong class="font-semibold text-yellow-600">${item.sin_cuenta.toLocaleString('es-CO')}</strong></p>
+                    </div>
+                </div>`;
+        });
+    };
+
     /**
      * Muestra el modal y carga los detalles según el tipo de reporte.
      */
     const fetchDetalles = async (responsable) => {
-        detallebaseodalTitle.textContent = `Detalle de Documentos para ${responsable}`;
-        detallesListDiv.innerHTML = '<div class="text-center text-gray-500 p-8 bg-gray-50 rounded-lg shadow-inner">Cargando detalles...</div>';
-        modalDetalles.classList.remove('hidden');
-        modalDetalles.classList.add('flex');
-        
         const detalles = detallesPorResponsable[responsable];
         if (!detalles || detalles.length === 0) {
             detallesListDiv.innerHTML = '<p>No se encontró mapa de detalles para este responsable.</p>';
             return;
         }
 
-        // Lógica bifurcada: ERP usa su propio renderizador, los otros van a la API de nombres.
-        if (activeReport === 'erp') {
+        // Lógica bifurcada
+        if (activeReport === 'erp' || activeReport === 'erp_proceso') {
+            detallebaseodalTitle.textContent = `Detalle de Documentos para ${responsable}`;
+            detallesListDiv.innerHTML = '<div class="text-center text-gray-500 p-8 bg-gray-50 rounded-lg shadow-inner">Cargando detalles...</div>';
+            modalDetalles.classList.remove('hidden');
+            modalDetalles.classList.add('flex');
             renderERPDetallebaseodal(detalles);
             return;
         }
 
+        if (activeReport === 'glosas_sin_radicar') {
+            detallebaseodalTitle.textContent = `Glosas sin Radicar para ${responsable}`;
+            detallesListDiv.innerHTML = '<div class="text-center text-gray-500 p-8 bg-gray-50 rounded-lg shadow-inner">Cargando detalles...</div>';
+            modalDetalles.classList.remove('hidden');
+            modalDetalles.classList.add('flex');
+            renderGlosasSinRadicarDetalleModal(detalles);
+            return;
+        }
+
+        // Lógica para reportes de Ingreso y Analistas
+        detallebaseodalTitle.textContent = `Detalle de Documentos para ${responsable}`;
+        detallesListDiv.innerHTML = '<div class="text-center text-gray-500 p-8 bg-gray-50 rounded-lg shadow-inner">Cargando detalles...</div>';
+        modalDetalles.classList.remove('hidden');
+        modalDetalles.classList.add('flex');
         try {
             const response = await fetch('api/reporte_detalles.php', {
                 method: 'POST',
@@ -178,29 +268,6 @@ document.addEventListener('DOMContentLoaded', () => {
     /**
      * [MODIFICADO] Renderiza los datos del reporte ERP en tarjetas de resumen interactivas.
      */
-    const renderReporteERP = (data) => {
-        const formatter = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
-
-        dashboardContainer.innerHTML = ''; // Limpiar contenido anterior
-
-        data.forEach(item => {
-            dashboardContainer.innerHTML += `
-                <div class="item-card bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 ease-in-out cursor-pointer border border-gray-200 hover:border-blue-500" data-responsable="${item.responsable}">
-                    <div class="card-header p-4 border-b border-gray-200 bg-gray-50 flex items-center justify-center h-24">
-                        <h3 class="text-xl font-montserrat font-semibold text-gray-800 text-center">${item.responsable}</h3>
-                    </div>
-                    <div class="p-4 space-y-3">
-                        <h4 class="text-xs font-montserrat font-medium text-gray-500 uppercase tracking-wider">Resumen de Radicación</h4>
-                        <p class="flex justify-between text-base text-gray-700"><span>Total Cuentas:</span><strong class="font-semibold text-gray-900">${item.total_documentos}</strong></p>
-                        <p class="flex justify-between text-base text-gray-700"><span>Total Facturas:</span><strong class="font-semibold text-gray-900">${item.total_facturas_radicadas}</strong></p>
-                        <hr class="border-gray-200 my-3">
-                        <p class="flex justify-between text-base text-gray-700"><span>Valor Aceptado:</span><strong class="font-semibold text-gray-900">${formatter.format(item.total_aceptado)}</strong></p>
-                        <p class="flex justify-between text-base text-gray-700"><span>Valor Refutado:</span><strong class="font-semibold text-gray-900">${formatter.format(item.total_refutado)}</strong></p>
-                        <p class="flex justify-between text-base text-gray-700"><span>Valor Conciliado:</span><strong class="font-semibold text-gray-900">${formatter.format(item.total_conciliado)}</strong></p>
-                    </div>
-                </div>`;
-        });
-    };
 
     /**
      * [MODIFICADO] Renderiza el contenido del modal de detalles para el reporte ERP con filas expandibles.
@@ -244,7 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td class="py-3 px-4 text-center text-base text-gray-800 whitespace-nowrap">${doc.tercero_nombre}</td>
                     <td class="py-3 px-4 text-center text-base text-gray-800 whitespace-nowrap"><strong>${facturasCount}</strong></td>
                     <td class="py-3 px-4 text-center text-base text-gray-800 whitespace-nowrap">${doc.freg}</td>
-                    <td class="py-3 px-4 text-center text-base text-gray-800 whitespace-nowrap">${doc.fecha_rep}</td>
+                    <td class="py-3 px-4 text-center text-base text-gray-800 whitespace-nowrap">${doc.fecha_rep === '1899-12-30' ? '<span class="text-red-500 font-semibold">No Radicado</span>' : doc.fecha_rep}</td>
                     <td class="py-3 px-4 text-center text-base text-gray-800 whitespace-nowrap">${formatter.format(doc.vr_tref)}</td>
                     <td class="py-3 px-4 text-center text-base text-gray-800 whitespace-nowrap">${formatter.format(doc.vr_tace)}</td>
                     <td class="py-3 px-4 text-center text-base text-gray-800 whitespace-nowrap">${formatter.format(doc.vr_tcon)}</td>
@@ -425,29 +492,90 @@ document.addEventListener('DOMContentLoaded', () => {
         detallesListDiv.innerHTML = tableHTML;
     };
 
+    /**
+     * [NUEVO] Renderiza el contenido del modal para el reporte de Facturas sin Radicar.
+     */
+    const renderGlosasSinRadicarDetalleModal = (glosas) => {
+        let tableHTML = `
+            <table class="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <thead class="bg-gray-100 sticky top-0 z-10">
+                    <tr>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">No.</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Glosa</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Estados Pendientes</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+        let rowNum = 1;
+        glosas.forEach(glosa => {
+            tableHTML += `
+                <tr class="border-b border-gray-200 hover:bg-gray-50 even:bg-gray-50">
+                    <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap">${rowNum++}</td>
+                    <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap">${glosa.glosa}</td>
+                    <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap font-semibold">${glosa.items.map(item => `${item.estado} (${item.fecha_gl})`).join(', ')}</td>
+                </tr>`;
+        });
+
+        tableHTML += '</tbody></table>';
+        detallesListDiv.innerHTML = tableHTML;
+    };
+
     // --- 4. MANEJADORES DE EVENTOS ---
-    
+
     filtroForm.addEventListener('submit', (e) => {
         e.preventDefault();
         fetchReporte(activeReport, fechaInicioInput.value, fechaFinInput.value);
     });
 
+    radicacionButton.addEventListener('click', (e) => {
+        e.stopPropagation(); // Evita que el evento de clic en el documento se dispare inmediatamente.
+        radicacionSubmenu.classList.toggle('hidden');
+    });
+
     navButtons.forEach(button => {
         button.addEventListener('click', () => {
+            const report = button.dataset.report;
+            if (!report) return; // Si no es un botón de reporte, no hace nada.
+
+            activeReport = report;
+
+            // Gestionar estado visual de los botones
             navButtons.forEach(btn => {
-                btn.classList.remove('bg-blue-700', 'hover:bg-blue-800', 'active:bg-blue-900');
-                btn.classList.add('bg-blue-500', 'hover:bg-blue-600');
+                btn.classList.remove('bg-blue-700', 'text-white', 'font-bold');
+                // Para los botones que no están en el submenú
+                if (!btn.closest('#radicacion-submenu')) {
+                    btn.classList.add('bg-blue-500', 'text-white', 'hover:bg-blue-600');
+                }
             });
-            button.classList.remove('bg-blue-500', 'hover:bg-blue-600');
-            button.classList.add('bg-blue-700', 'hover:bg-blue-800', 'active:bg-blue-900');
-            activeReport = button.dataset.report;
-            // Cargar el reporte solo si hay fechas seleccionadas, de lo contrario, mostrar mensaje
+
+            if (button.closest('#radicacion-submenu')) {
+                // Es un botón del submenú
+                radicacionButton.classList.add('bg-blue-700', 'text-white', 'font-bold');
+                radicacionButton.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+                button.classList.add('font-bold'); // Resalta la opción seleccionada en el submenú
+                radicacionSubmenu.classList.add('hidden'); // Oculta el submenú después de la selección
+            } else {
+                // Es un botón principal
+                button.classList.add('bg-blue-700', 'text-white', 'font-bold');
+                button.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+                radicacionButton.classList.remove('bg-blue-700', 'text-white', 'font-bold');
+                radicacionButton.classList.add('bg-blue-500', 'hover:bg-blue-600');
+            }
+
             if (fechaInicioInput.value && fechaFinInput.value) {
                 fetchReporte(activeReport, fechaInicioInput.value, fechaFinInput.value);
             } else {
                 dashboardContainer.innerHTML = '<div class="col-span-full text-center text-gray-500 p-8 bg-gray-50 rounded-lg shadow-inner">Por favor, seleccione un rango de fechas y genere un reporte.</div>';
             }
         });
+    });
+
+    // Cerrar el submenú si se hace clic fuera de él
+    document.addEventListener('click', (e) => {
+        if (!radicacionMenu.contains(e.target)) {
+            radicacionSubmenu.classList.add('hidden');
+        }
     });
 
     // Event listener para abrir el modal de detalles al hacer clic en una tarjeta.
@@ -492,7 +620,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Cargar datos solo si no se han cargado antes.
                 if (subDetalleContainer.innerHTML.includes('Cargando')) {
                     try {
-                        const response = await fetch(`api/reporte_erp_subdetalles.php?gr_docn=${grDocn}`);
+                        const subdetalleApi = activeReport === 'erp_proceso' 
+                            ? `api/reporte_erp_subdetalles_proceso.php?gr_docn=${grDocn}` 
+                            : `api/reporte_erp_subdetalles.php?gr_docn=${grDocn}`;
+
+                        const response = await fetch(subdetalleApi);
                         if (!response.ok) {
                             const errorText = await response.text();
                             throw new Error(`Error al cargar sub-detalles: ${errorText}`);

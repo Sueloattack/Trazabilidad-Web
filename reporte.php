@@ -35,7 +35,19 @@
             <nav class="report-nav flex justify-center space-x-4 border-b border-blue-700 pb-2">
                 <button class="nav-button px-6 py-2 rounded-full text-lg font-montserrat font-semibold transition-all duration-200 ease-in-out bg-blue-500 text-white hover:bg-blue-600" data-report="ingreso">Ingreso</button>
                 <button class="nav-button px-6 py-2 rounded-full text-lg font-montserrat font-semibold transition-all duration-200 ease-in-out bg-blue-500 text-white hover:bg-blue-600" data-report="analistas">Respuesta  </button>
-                <button class="nav-button px-6 py-2 rounded-full text-lg font-montserrat font-semibold transition-all duration-200 ease-in-out bg-blue-500 text-white hover:bg-blue-600" data-report="erp">Radicación</button>
+                <div class="relative" id="radicacion-menu">
+                    <button id="radicacion-button" class="nav-button-parent px-6 py-2 rounded-full text-lg font-montserrat font-semibold transition-all duration-200 ease-in-out bg-blue-500 text-white hover:bg-blue-600 flex items-center">
+                        Radicación
+                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="radicacion-submenu" class="absolute mt-2 w-72 bg-white rounded-md shadow-lg z-10 hidden ring-1 ring-black ring-opacity-5 focus:outline-none" tabindex="-1">
+                        <div class="py-1" role="none">
+                            <button class="nav-button text-gray-700 block w-full text-left px-4 py-3 text-base font-montserrat hover:bg-gray-100" data-report="erp" role="menuitem" tabindex="-1">Cuentas de cobro radicadas</button>
+                            <button class="nav-button text-gray-700 block w-full text-left px-4 py-3 text-base font-montserrat hover:bg-gray-100" data-report="erp_proceso" role="menuitem" tabindex="-1">Cuentas de cobro en proceso</button>
+                            <button class="nav-button text-gray-700 block w-full text-left px-4 py-3 text-base font-montserrat hover:bg-gray-100" data-report="glosas_sin_radicar" role="menuitem" tabindex="-1">Glosas sin radicar</button>
+                        </div>
+                    </div>
+                </div>
             </nav>
         </header>
 
