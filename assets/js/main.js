@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeDetallebaseodalButton = document.getElementById('close-detalles-modal-button');
     const detallesListDiv = document.getElementById('detalles-list');
     const detallebaseodalTitle = document.getElementById('detalles-modal-title');
+    const modalHeader = document.querySelector('.modal-header'); // [NUEVO] Selector para la cabecera del modal
 
     // --- 2. ESTADO DE LA APLICACIÓN ---
     let activeReport = 'ingreso';
@@ -100,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (item.desglose_ratificacion) {
                 // Mostrar todos los estados, incluso si son cero. Añadir flex para la alineación.
                 for (const [key, value] of Object.entries(item.desglose_ratificacion)) {
-                    desgloseHTML += `<p class="flex justify-between text-base text-gray-700"><span>${key.toUpperCase()}</span><strong class="font-semibold text-gray-900">${value.cantidad} / ${value.valor}</strong></p>`;
+                    desgloseHTML += `<p class="flex justify-between text-base text-gray-700"><span>${key.toUpperCase()}</span><strong class="font-semibold text-gray-900">${value.cantidad_facturas} / ${value.cantidad} / ${value.valor}</strong></p>`;
                 }
             }
             dashboardContainer.innerHTML += `
@@ -212,6 +213,19 @@ document.addEventListener('DOMContentLoaded', () => {
      * Muestra el modal y carga los detalles según el tipo de reporte.
      */
     const fetchDetalles = async (responsable) => {
+        // [NUEVO] Limpiar botón de exportación anterior y añadir el nuevo
+        const existingExportBtn = document.getElementById('export-card-btn');
+        if (existingExportBtn) {
+            existingExportBtn.remove();
+        }
+        const exportButton = document.createElement('button');
+        exportButton.id = 'export-card-btn';
+        exportButton.dataset.responsable = responsable;
+        exportButton.className = 'ml-4 p-2 rounded-full hover:bg-gray-200 transition-colors';
+        exportButton.title = 'Exportar a Excel';
+        exportButton.innerHTML = '📄'; // Icono de Excel/documento
+        modalHeader.insertBefore(exportButton, closeDetallebaseodalButton);
+
         const detalles = detallesPorResponsable[responsable];
         if (!detalles || detalles.length === 0) {
             detallesListDiv.innerHTML = '<p>No se encontró mapa de detalles para este responsable.</p>';
@@ -586,6 +600,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // [NUEVO] Event listener para el botón de exportar a Excel
+    modalHeader.addEventListener('click', (e) => {
+        const exportButton = e.target.closest('#export-card-btn');
+        if (exportButton) {
+            const responsable = exportButton.dataset.responsable;
+            exportarDetalleXLSX(responsable);
+        }
+    });
+
     // Event listeners para cerrar el modal.
     const closeModal = () => {
         modalDetalles.classList.add('hidden');
@@ -645,6 +668,50 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
+
+    /**
+     * [NUEVO] Exporta los datos de la tabla de detalles a un archivo .xlsx.
+     * @param {string} responsable - El nombre del responsable para añadirlo como columna.
+     */
+    const exportarDetalleXLSX = (responsable) => {
+        const table = detallesListDiv.querySelector('table');
+        if (!table) {
+            alert('No hay datos para exportar.');
+            return;
+        }
+
+        // 1. Preparar los datos (Array de Arrays)
+        const data = [];
+
+        // 2. Añadir las cabeceras
+        const headers = [];
+        table.querySelectorAll('thead th').forEach(th => headers.push(th.textContent));
+        headers.push('Responsable'); // Añadir la nueva cabecera
+        data.push(headers);
+
+        // 3. Añadir las filas del cuerpo de la tabla
+        table.querySelectorAll('tbody tr').forEach(tr => {
+            const rowData = [];
+            tr.querySelectorAll('td').forEach(td => rowData.push(td.textContent));
+            rowData.push(responsable); // Añadir el nombre del responsable a cada fila
+            data.push(rowData);
+        });
+
+        // 4. Usar SheetJS para crear y descargar el archivo
+        try {
+            const worksheet = XLSX.utils.aoa_to_sheet(data);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Detalle');
+            
+            // Generar un nombre de archivo dinámico
+            const fileName = `Detalle_${responsable.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}.xlsx`;
+            
+            XLSX.writeFile(workbook, fileName);
+        } catch (error) {
+            console.error('Error al generar el archivo XLSX:', error);
+            alert('Hubo un error al generar el archivo Excel.');
+        }
+    };
 
     // --- 5. INICIALIZACIÓN ---
     setDefaultDates();

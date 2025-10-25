@@ -73,13 +73,13 @@ function generarReporte(
     }
 
     $resultadosAgregados = [];
-    $facturasContadasParaTotales = [];
+    // $facturasContadasParaTotales = []; // Eliminado para contar ítems en lugar de facturas únicas.
     $mapa_para_detalles_enriquecido = [];
     
     // Estructura base para el desglose (varía entre reportes)
     $desglose_base = array_fill_keys(
         $desglose_keys, 
-        ['cantidad' => 0, 'valor' => 0.0]
+        ['cantidad' => 0, 'valor' => 0.0, 'facturas' => []] // Añadido 'facturas' para el conteo por estado.
     );
 
     foreach ($itemsCandidatosVFP as $itemGema) {
@@ -104,16 +104,14 @@ function generarReporte(
             ];
         }
         
-        // Sumar al total general (cuenta facturas únicas)
-        if (!isset($facturasContadasParaTotales[$responsable_final.'::'.$idCompuesto])) {
-            $resultadosAgregados[$responsable_final]['cantidad_glosas_ingresadas']++;
-            $facturasContadasParaTotales[$responsable_final.'::'.$idCompuesto] = true;
-        }
+        // Se elimina el conteo de productividad de aquí. Se calculará al final.
 
         // Lógica de Desglose y Totales 
         if (array_key_exists($tipoItem, $resultadosAgregados[$responsable_final]['desglose_ratificacion'])) {
             $resultadosAgregados[$responsable_final]['desglose_ratificacion'][$tipoItem]['cantidad']++;
             $resultadosAgregados[$responsable_final]['desglose_ratificacion'][$tipoItem]['valor'] += $valorItem;
+            // PASO 2: Recolectar la factura para el conteo por estado.
+            $resultadosAgregados[$responsable_final]['desglose_ratificacion'][$tipoItem]['facturas'][] = $idCompuesto;
         }
         
         $resultadosAgregados[$responsable_final]['valor_total_glosas'] += $valorItem; 
@@ -147,14 +145,34 @@ function generarReporte(
                 $divisor = $dias_en_rango;
             }
         }
-        $promedio_cantidad = $divisor > 0 ? ($datosResponsable['cantidad_glosas_ingresadas'] / $divisor) : 0;
-        $promedio_valor = $divisor > 0 ? ($datosResponsable['valor_total_glosas'] / $divisor) : 0;
-        
-        // Formateo de desglose
-        foreach ($datosResponsable['desglose_ratificacion'] as &$value) {
+
+        // --- INICIO DE LA CORRECCIÓN ---
+        $totalGlosasIngresadas = 0;
+
+        // Calcular conteo de facturas, formatear desglose y calcular el nuevo total de productividad.
+        foreach ($datosResponsable['desglose_ratificacion'] as $estado => &$value) {
+            $facturasUnicasCount = count(array_unique($value['facturas']));
+
+            // Sumar al total de productividad, EXCLUYENDO el estado aceptado.
+            if ($estado !== $estatus_aceptado) {
+                $totalGlosasIngresadas += $facturasUnicasCount;
+            }
+
+            // Añadir el conteo de facturas para la UI.
+            $value['cantidad_facturas'] = $facturasUnicasCount;
+            // Formatear el valor monetario.
             $value['valor'] = '$' . number_format($value['valor'], 0, ',', '.');
+            // Limpiar el array temporal de la respuesta final.
+            unset($value['facturas']);
         }
         unset($value);
+
+        // Asignar el total de productividad correcto.
+        $datosResponsable['cantidad_glosas_ingresadas'] = $totalGlosasIngresadas;
+        // --- FIN DE LA CORRECCIÓN ---
+
+        $promedio_cantidad = $divisor > 0 ? ($datosResponsable['cantidad_glosas_ingresadas'] / $divisor) : 0;
+        $promedio_valor = $divisor > 0 ? ($datosResponsable['valor_total_glosas'] / $divisor) : 0;
         
         $valor_total_items = $datosResponsable['valor_glosado'] + $datosResponsable['valor_aceptado'];
         

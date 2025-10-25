@@ -71,6 +71,9 @@
         </section>
     </main>
 
+    <!-- Librería SheetJS para exportar a XLSX -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+
     <script src="assets/js/main.js"></script>
 
     <!-- ======== MODAL DE DETALLES DE FACTURA ======== -->
