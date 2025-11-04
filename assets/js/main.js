@@ -33,10 +33,47 @@ document.addEventListener('DOMContentLoaded', () => {
         fechaInicioInput.value = '';
     };
 
+    const submitButton = filtroForm.querySelector('button');
+
+    /**
+     * Deshabilita los elementos de la UI durante la carga.
+     */
+    const disableUI = () => {
+        fechaInicioInput.disabled = true;
+        fechaFinInput.disabled = true;
+        submitButton.disabled = true;
+        submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+
+        navButtons.forEach(button => {
+            button.disabled = true;
+            button.classList.add('opacity-50', 'cursor-not-allowed');
+        });
+        radicacionButton.disabled = true;
+        radicacionButton.classList.add('opacity-50', 'cursor-not-allowed');
+    };
+
+    /**
+     * Habilita los elementos de la UI después de la carga.
+     */
+    const enableUI = () => {
+        fechaInicioInput.disabled = false;
+        fechaFinInput.disabled = false;
+        submitButton.disabled = false;
+        submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+
+        navButtons.forEach(button => {
+            button.disabled = false;
+            button.classList.remove('opacity-50', 'cursor-not-allowed');
+        });
+        radicacionButton.disabled = false;
+        radicacionButton.classList.remove('opacity-50', 'cursor-not-allowed');
+    };
+
     /**
      * Llama a la API principal para obtener los datos agregados del reporte.
      */
     const fetchReporte = async (reporte, fechaInicio = '', fechaFin = '') => {
+        disableUI(); // Deshabilitar UI al inicio de la petición
         dashboardContainer.innerHTML = '<div class="col-span-full text-center text-gray-500 p-8 bg-gray-50 rounded-lg shadow-inner">Cargando datos...</div>';
         detallesPorResponsable = {}; 
 
@@ -60,6 +97,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error(`Error al obtener el reporte '${reporte}':`, error);
             dashboardContainer.innerHTML = `<div class="col-span-full text-center text-red-600 p-8 bg-red-50 rounded-lg shadow-inner">Error al cargar el reporte.<br><pre>${error.message}</pre></div>`;
+        } finally {
+            enableUI(); // Habilitar UI al finalizar la petición
         }
     };
     
@@ -223,8 +262,13 @@ document.addEventListener('DOMContentLoaded', () => {
         exportButton.dataset.responsable = responsable;
         exportButton.className = 'ml-4 p-2 rounded-full hover:bg-gray-200 transition-colors';
         exportButton.title = 'Exportar a Excel';
-        exportButton.innerHTML = '📄'; // Icono de Excel/documento
+        exportButton.innerHTML = '<span class="text-green-600 text-2xl">📊</span>'; // Icono de Excel/documento
         modalHeader.insertBefore(exportButton, closeDetallebaseodalButton);
+
+        // Forzar estilos en el contenedor para asegurar que `sticky` funcione.
+        detallesListDiv.style.display = 'block';
+        detallesListDiv.style.overflowY = 'auto';
+        detallesListDiv.style.height = 'calc(90vh - 150px)'; // Altura calculada para el scroll
 
         const detalles = detallesPorResponsable[responsable];
         if (!detalles || detalles.length === 0) {
@@ -429,28 +473,12 @@ document.addEventListener('DOMContentLoaded', () => {
         filasProcesadas.sort((a, b) => b.valorGlosadoNum - a.valorGlosadoNum);
         
         const valorAceptadoHeader = activeReport === 'ingreso' ? 'Valor levantado por la erp' : 'Valor Aceptado';
-        let tableHTML = `
-            <table class="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden">
-                <thead class="bg-gray-100 sticky top-0 z-10">
-                    <tr>
-                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">No</th>
-                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Glosa</th>
-                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Entidad</th>
-                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Total Ítems</th>
-                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Desglose por estado</th>
-                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Valor Glosado</th>
-                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">${valorAceptadoHeader}</th>
-                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Total Reclamado</th>
-                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Fecha Glosa</th>
-                    </tr>
-                </thead>
-                <tbody>`;
-
-        let numeroFila = 1;
-        const totales = { items: 0, glosado: 0.0, aceptado: 0.0, reclamado: 0.0 };
+        
         const formatter = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
+        const totales = { items: 0, glosado: 0.0, aceptado: 0.0, reclamado: 0.0 };
+        let numeroFila = 1;
 
-        filasProcesadas.forEach(fila => {
+        let tableRowsHTML = filasProcesadas.map(fila => {
             const { eventoKey, itemsList } = fila;
             const parts = eventoKey.split('-');
             const documento = `${parts[0]}${parts[1]}`;
@@ -473,7 +501,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const totalReclamadoFila = desglose.valorGlosado + desglose.valorAceptado;
             const desgloseStr = Object.entries(desglose.estatusCounts).map(([est, count]) => `${est.toUpperCase()} (${count})`).join(', ');
 
-            tableHTML += `
+            totales.items += totalItems;
+            totales.glosado += desglose.valorGlosado;
+            totales.aceptado += desglose.valorAceptado;
+            totales.reclamado += totalReclamadoFila;
+
+            return `
                 <tr class="border-b border-gray-200 hover:bg-gray-50 even:bg-gray-50">
                     <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap">${numeroFila++}</td>
                     <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap">${documento}</td>
@@ -485,27 +518,38 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap">${formatter.format(totalReclamadoFila)}</td>
                     <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap">${fechaGlosa}</td>
                 </tr>`;
+        }).join('');
 
-            totales.items += totalItems;
-            totales.glosado += desglose.valorGlosado;
-            totales.aceptado += desglose.valorAceptado;
-            totales.reclamado += totalReclamadoFila;
-        });
-        
-        tableHTML += '</tbody>';
-        tableHTML += `
-            <tfoot class="bg-gray-100 sticky bottom-0 z-10">
-                <tr>
-                    <th colspan="3" class="py-3 px-4 text-center text-base font-montserrat font-bold text-gray-800 uppercase tracking-wider">TOTALES</th>
-                    <th class="py-3 px-4 text-center text-base font-montserrat font-bold text-gray-800 uppercase tracking-wider">${totales.items.toLocaleString('es-CO')}</th>
-                    <th class="py-3 px-4"></th>
-                    <th class="py-3 px-4 text-center text-base font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.glosado)}</th>
-                    <th class="py-3 px-4 text-center text-base font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.aceptado)}</th>
-                    <th class="py-3 px-4 text-center text-base font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.reclamado)}</th>
-                    <th class="py-3 px-4"></th>
-                </tr>
-            </tfoot>`;
-        tableHTML += '</table>';
+        let tableHTML = `
+            <table class="min-w-full bg-white border-collapse">
+                <thead class="bg-gray-100 sticky top-0 z-10">
+                    <tr>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">No</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Glosa</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Entidad</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Total Ítems</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Desglose por estado</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Valor Glosado</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">${valorAceptadoHeader}</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Total Reclamado</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Fecha Glosa</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRowsHTML}
+                </tbody>
+                <tfoot class="bg-gray-100 sticky bottom-0 z-10">
+                    <tr>
+                        <th colspan="3" class="py-3 px-4 text-center text-base font-montserrat font-bold text-gray-800 uppercase tracking-wider">TOTALES</th>
+                        <th class="py-3 px-4 text-center text-base font-montserrat font-bold text-gray-800 uppercase tracking-wider">${totales.items.toLocaleString('es-CO')}</th>
+                        <th class="py-3 px-4"></th>
+                        <th class="py-3 px-4 text-center text-base font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.glosado)}</th>
+                        <th class="py-3 px-4 text-center text-base font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.aceptado)}</th>
+                        <th class="py-3 px-4 text-center text-base font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.reclamado)}</th>
+                        <th class="py-3 px-4"></th>
+                    </tr>
+                </tfoot>
+            </table>`;
         
         detallesListDiv.innerHTML = tableHTML;
     };
@@ -581,11 +625,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 radicacionButton.classList.add('bg-blue-500', 'hover:bg-blue-600');
             }
 
-            if (fechaInicioInput.value && fechaFinInput.value) {
-                fetchReporte(activeReport, fechaInicioInput.value, fechaFinInput.value);
-            } else {
-                dashboardContainer.innerHTML = '<div class="col-span-full text-center text-gray-500 p-8 bg-gray-50 rounded-lg shadow-inner">Por favor, seleccione un rango de fechas y genere un reporte.</div>';
-            }
+            // Mostrar mensaje de solicitud de fechas al cambiar de pestaña
+            dashboardContainer.innerHTML = '<div class="col-span-full text-center text-gray-500 p-8 bg-gray-50 rounded-lg shadow-inner">Por favor, seleccione un rango de fechas y genere un reporte.</div>';
         });
     });
 
