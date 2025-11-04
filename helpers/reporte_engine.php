@@ -33,7 +33,7 @@ function generarReporte(
     $estatus_where_clause = "(" . implode(' OR ', $estatus_or_conditions) . ")";
 
     $sql_gema = "
-        d.gl_docn, d.quien, d.estatus1, c.fc_serie AS serie, c.fc_docn AS docn, c.tercero, d.vr_glosa
+        d.gl_docn, d.quien, d.estatus1, c.fc_serie AS serie, c.fc_docn AS docn, c.tercero, d.vr_glosa, d.fecha_gl
         FROM gema10.d/salud/datos/glo_det d
         JOIN gema10.d/salud/datos/glo_cab c ON d.gl_docn = c.gl_docn
         WHERE {$estatus_where_clause}
@@ -45,25 +45,33 @@ function generarReporte(
         return ['data' => [], 'detalle_mapa' => []];
     }
     
-    // --- PASO 2: LIMPIEZA Y AGRAGACIÓN ---
-    $itemsCandidatosVFP = [];
+    // --- PASO 2: LIMPIEZA Y AGRUPACIÓN INICIAL POR FACTURA ---
+    $mapa_por_factura = [];
     foreach ($itemsCandidatosVFP_raw as $itemCrudo) {
-        $itemsCandidatosVFP[] = [
-            // ... (Lógica de limpieza) ...
+        $idCompuesto = strtoupper(trim($itemCrudo['serie'])) . '-' . strtoupper(trim($itemCrudo['docn'])) . '-' . strtoupper(trim($itemCrudo['tercero']));
+        $mapa_por_factura[$idCompuesto][] = [
             'serie'   => strtoupper(trim($itemCrudo['serie'])),
             'docn'    => strtoupper(trim($itemCrudo['docn'])),
             'tercero' => strtoupper(trim($itemCrudo['tercero'])),
             'quien'   => strtoupper(trim($itemCrudo['quien'])),
             'estatus1'  => strtolower(trim($itemCrudo['estatus1'])),
-            'vr_glosa' => (float)trim($itemCrudo['vr_glosa'])
+            'vr_glosa' => (float)trim($itemCrudo['vr_glosa']),
+            'fecha_gl' => trim($itemCrudo['fecha_gl']), // Fecha de creación del ítem
         ];
     }
-    
+
     // --- Obtener nombres reales de los responsables (quien) ---
-    $quien_aliases = array_unique(array_column($itemsCandidatosVFP, 'quien'));
+    $quien_aliases = [];
+    foreach($mapa_por_factura as $items) {
+        foreach($items as $item) {
+            if(!empty($item['quien'])) {
+                $quien_aliases[$item['quien']] = true;
+            }
+        }
+    }
+    $quien_aliases = array_keys($quien_aliases);
     $mapa_quien_nombres = [];
     if (!empty($quien_aliases)) {
-        // VFP IN clause for strings needs single quotes
         $in_values_quien = "'" . implode("','", array_map('trim', $quien_aliases)) . "'";
         $sql_quien_names = "id, nombre FROM gema10.d/dgen/datos/maopera2 WHERE id IN ({$in_values_quien})";
         $quien_data = queryApiGema($sql_quien_names);
@@ -72,110 +80,129 @@ function generarReporte(
         }
     }
 
+    // --- PASO 3: LÓGICA DE EVENTOS DE TRABAJO Y AGRUPACIÓN FINAL ---
     $resultadosAgregados = [];
-    // $facturasContadasParaTotales = []; // Eliminado para contar ítems en lugar de facturas únicas.
-    $mapa_para_detalles_enriquecido = [];
-    
-    // Estructura base para el desglose (varía entre reportes)
-    $desglose_base = array_fill_keys(
-        $desglose_keys, 
-        ['cantidad' => 0, 'valor' => 0.0, 'facturas' => []] // Añadido 'facturas' para el conteo por estado.
-    );
+    $mapa_para_detalles_final = [];
+    $desglose_base = array_fill_keys($desglose_keys, ['cantidad' => 0, 'valor' => 0.0, 'facturas' => []]);
 
-    foreach ($itemsCandidatosVFP as $itemGema) {
-        // ... (TODA la lógica de agregación de glosas, totales y mapas) ...
-        $idCompuesto = $itemGema['serie'] . '-' . $itemGema['docn'] . '-' . $itemGema['tercero'];
-        $responsable_alias = !empty($itemGema['quien']) ? strtoupper(trim($itemGema['quien'])) : '(Sin Asignar)';
-        // Usar el nombre real si se encuentra, de lo contrario, mantener el alias
+    foreach ($mapa_por_factura as $idCompuesto => $itemsList) {
+        $responsable_alias = !empty($itemsList[0]['quien']) ? strtoupper(trim($itemsList[0]['quien'])) : '(Sin Asignar)';
         $responsable_final = $mapa_quien_nombres[$responsable_alias] ?? $responsable_alias;
-        $tipoItem = $itemGema['estatus1'];
-        $valorItem = $itemGema['vr_glosa'];
-        
-        // Inicializar la estructura completa si es la primera vez
-        if (!isset($resultadosAgregados[$responsable_final])) {
-            $resultadosAgregados[$responsable_final] = [
-                'responsable' => $responsable_final,
-                'cantidad_glosas_ingresadas' => 0,
-                'valor_total_glosas' => 0.0,
-                'desglose_ratificacion' => $desglose_base, // USAMOS EL BASE
-                'total_items' => 0,
-                'valor_glosado' => 0.0,
-                'valor_aceptado' => 0.0
+
+        // 1. Separar items por tipo (primario, secundario)
+        $primary_items = [];
+        $secondary_items = []; // AI y AE
+        foreach ($itemsList as $item) {
+            if ($item['estatus1'] === 'ai' || $item['estatus1'] === 'ae') {
+                $secondary_items[] = $item;
+            } else {
+                $primary_items[] = $item;
+            }
+        }
+
+        // 2. Agrupar items primarios por status y fecha
+        $grupos_primarios = [];
+        $fechas_por_grupo = [];
+        foreach ($primary_items as $item) {
+            $status = $item['estatus1'];
+            $grupos_primarios[$status][] = $item;
+            $fechas_por_grupo[$status][$item['fecha_gl']] = true;
+        }
+
+        // 3. Asociar items secundarios a los grupos primarios por fecha
+        $unmatched_secondary_items = [];
+        foreach ($secondary_items as $item) {
+            $is_matched = false;
+            foreach ($fechas_por_grupo as $status => $fechas) {
+                if (isset($fechas[$item['fecha_gl']])) {
+                    $grupos_primarios[$status][] = $item;
+                    $is_matched = true;
+                    break; 
+                }
+            }
+            if (!$is_matched) {
+                $unmatched_secondary_items[] = $item;
+            }
+        }
+
+        // 4. Crear los eventos de trabajo (filas finales)
+        $eventos_de_trabajo = [];
+        if (empty($grupos_primarios)) { // Caso Aceptación Total
+            if (!empty($secondary_items)) {
+                $eventos_de_trabajo[$idCompuesto] = $secondary_items;
+            }
+        } else {
+            foreach ($grupos_primarios as $status => $items_del_grupo) {
+                $eventos_de_trabajo[$idCompuesto . '-' . $status] = $items_del_grupo;
+            }
+            if (!empty($unmatched_secondary_items)) { // Secundarios sin match van aparte
+                $eventos_de_trabajo[$idCompuesto . '-' . $estatus_aceptado] = $unmatched_secondary_items;
+            }
+        }
+
+        // 5. Procesar cada evento para agregados y mapa de detalle
+        foreach ($eventos_de_trabajo as $evento_key => $evento_items) {
+            // Inicializar responsable si no existe
+            if (!isset($resultadosAgregados[$responsable_final])) {
+                $resultadosAgregados[$responsable_final] = [
+                    'responsable' => $responsable_final, 'cantidad_glosas_ingresadas' => 0,
+                    'valor_total_glosas' => 0.0, 'desglose_ratificacion' => $desglose_base,
+                    'total_items' => 0, 'valor_glosado' => 0.0, 'valor_aceptado' => 0.0
+                ];
+            }
+
+            // Contar como 1 evento de trabajo
+            $resultadosAgregados[$responsable_final]['cantidad_glosas_ingresadas']++;
+            
+            foreach ($evento_items as $item) {
+                $tipoItem = $item['estatus1'];
+                $valorItem = $item['vr_glosa'];
+
+                // Sumar a totales del responsable
+                $resultadosAgregados[$responsable_final]['total_items']++;
+                $resultadosAgregados[$responsable_final]['valor_total_glosas'] += $valorItem;
+                if ($tipoItem === 'ai' || $tipoItem === 'ae') {
+                    $resultadosAgregados[$responsable_final]['valor_aceptado'] += $valorItem;
+                } else {
+                    $resultadosAgregados[$responsable_final]['valor_glosado'] += $valorItem;
+                }
+                
+                // Sumar a desglose de ratificación
+                if (array_key_exists($tipoItem, $resultadosAgregados[$responsable_final]['desglose_ratificacion'])) {
+                    $resultadosAgregados[$responsable_final]['desglose_ratificacion'][$tipoItem]['cantidad']++;
+                    $resultadosAgregados[$responsable_final]['desglose_ratificacion'][$tipoItem]['valor'] += $valorItem;
+                    $resultadosAgregados[$responsable_final]['desglose_ratificacion'][$tipoItem]['facturas'][] = $idCompuesto;
+                }
+            }
+            
+            // Guardar en el mapa para el modal
+            $mapa_para_detalles_final[$responsable_final][$evento_key] = [
+                'items' => $evento_items,
+                'ingresos' => 1 // Cada fila es 1 ingreso/evento
             ];
         }
-        
-        // Se elimina el conteo de productividad de aquí. Se calculará al final.
-
-        // Lógica de Desglose y Totales 
-        if (array_key_exists($tipoItem, $resultadosAgregados[$responsable_final]['desglose_ratificacion'])) {
-            $resultadosAgregados[$responsable_final]['desglose_ratificacion'][$tipoItem]['cantidad']++;
-            $resultadosAgregados[$responsable_final]['desglose_ratificacion'][$tipoItem]['valor'] += $valorItem;
-            // PASO 2: Recolectar la factura para el conteo por estado.
-            $resultadosAgregados[$responsable_final]['desglose_ratificacion'][$tipoItem]['facturas'][] = $idCompuesto;
-        }
-        
-        $resultadosAgregados[$responsable_final]['valor_total_glosas'] += $valorItem; 
-        $resultadosAgregados[$responsable_final]['total_items']++;
-
-        if ($tipoItem === $estatus_aceptado) { 
-            $resultadosAgregados[$responsable_final]['valor_aceptado'] += $valorItem;
-        } else {
-            $resultadosAgregados[$responsable_final]['valor_glosado'] += $valorItem;
-        }
-        
-        // Construir el mapa enriquecido para el modal de detalles
-        $mapa_para_detalles_enriquecido[$responsable_final][$idCompuesto][] = [
-            'estatus' => $tipoItem,
-            'valor' => $valorItem
-        ];
     }
 
-
-    // --- PASO 3: CÁLCULO DE PROMEDIOS Y FORMATEO FINAL ---
+    // --- PASO 4: CÁLCULO DE PROMEDIOS Y FORMATEO FINAL ---
     $dias_en_rango = (new DateTime($fecha_fin))->diff(new DateTime($fecha_inicio))->days + 1;
     $resultados_finales = [];
-    
+
     foreach ($resultadosAgregados as $datosResponsable) {
         $periodo = ($dias_en_rango >= 28) ? 'mensual' : 'diario';
-        $divisor = 1.0;
-        if ($dias_en_rango > 0) {
-            if ($periodo === 'mensual') {
-                $divisor = $dias_en_rango / 30.0;
-            } else {
-                $divisor = $dias_en_rango;
-            }
-        }
+        $divisor = ($dias_en_rango > 0) ? (($periodo === 'mensual') ? $dias_en_rango / 30.0 : $dias_en_rango) : 1.0;
 
-        // --- INICIO DE LA CORRECCIÓN ---
-        $totalGlosasIngresadas = 0;
-
-        // Calcular conteo de facturas, formatear desglose y calcular el nuevo total de productividad.
-        foreach ($datosResponsable['desglose_ratificacion'] as $estado => &$value) {
-            $facturasUnicasCount = count(array_unique($value['facturas']));
-
-            // Sumar al total de productividad, EXCLUYENDO el estado aceptado.
-            if ($estado !== $estatus_aceptado) {
-                $totalGlosasIngresadas += $facturasUnicasCount;
-            }
-
-            // Añadir el conteo de facturas para la UI.
-            $value['cantidad_facturas'] = $facturasUnicasCount;
-            // Formatear el valor monetario.
+        // Formatear desglose (el conteo de productividad ya es correcto)
+        foreach ($datosResponsable['desglose_ratificacion'] as &$value) {
+            $value['cantidad_facturas'] = count(array_unique($value['facturas']));
             $value['valor'] = '$' . number_format($value['valor'], 0, ',', '.');
-            // Limpiar el array temporal de la respuesta final.
             unset($value['facturas']);
         }
         unset($value);
 
-        // Asignar el total de productividad correcto.
-        $datosResponsable['cantidad_glosas_ingresadas'] = $totalGlosasIngresadas;
-        // --- FIN DE LA CORRECCIÓN ---
-
         $promedio_cantidad = $divisor > 0 ? ($datosResponsable['cantidad_glosas_ingresadas'] / $divisor) : 0;
         $promedio_valor = $divisor > 0 ? ($datosResponsable['valor_total_glosas'] / $divisor) : 0;
-        
         $valor_total_items = $datosResponsable['valor_glosado'] + $datosResponsable['valor_aceptado'];
-        
+
         $resultados_finales[] = [
             'responsable' => $datosResponsable['responsable'],
             'cantidad_glosas_ingresadas' => $datosResponsable['cantidad_glosas_ingresadas'],
@@ -192,15 +219,15 @@ function generarReporte(
             'valor_total_items' => '$' . number_format($valor_total_items, 0, ',', '.')
         ];
     }
-    
+
     // Ordenar los resultados finales por cantidad
     usort($resultados_finales, function($a, $b) {
         return $b['cantidad_glosas_ingresadas'] <=> $a['cantidad_glosas_ingresadas'];
     });
-    
+
     // Retornar la respuesta sin el encode JSON
     return [
         'data' => $resultados_finales, 
-        'detalle_mapa' => $mapa_para_detalles_enriquecido
+        'detalle_mapa' => $mapa_para_detalles_final
     ];
 }

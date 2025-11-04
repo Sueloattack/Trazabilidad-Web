@@ -31,12 +31,12 @@ try {
 
     // Extraer eficientemente todos los códigos de tercero ÚNICOS y NUMÉRICOS del mapa
     $codigos_a_traducir = [];
-    foreach (array_keys($mapa_detalles) as $id_compuesto) {
-        $parts = explode('-', $id_compuesto, 3);
-        // Usamos isset($parts[2]) para una comprobación más rápida y segura
+    foreach (array_keys($mapa_detalles) as $evento_key) {
+        $parts = explode('-', $evento_key);
+        // El código de tercero es siempre la tercera parte de la clave
         if (isset($parts[2])) {
-            $codigo = filter_var($parts[2], FILTER_SANITIZE_NUMBER_INT);
-            if ($codigo) { // filter_var devuelve false si no puede sanitizar
+            $codigo = intval($parts[2]); // intval es más seguro para extraer el número inicial
+            if ($codigo > 0) { 
                  $codigos_a_traducir[$codigo] = true;
             }
         }

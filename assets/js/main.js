@@ -271,7 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const mapaNombres = await response.json();
             const estatusAceptado = (activeReport === 'analistas') ? 'ai' : 'ae';
 
-            renderDetallebaseodal(detalles, mapaNombres, estatusAceptado);
+            renderDetallebaseodal(detalles, mapaNombres, estatusAceptado, responsable);
 
         } catch (error) {
             console.error('Error al obtener los detalles:', error);
@@ -402,30 +402,33 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {object} detallebaseap - El mapa de facturas enriquecido.
      * @param {object} mapaNombres - El diccionario de nombres de terceros.
      */
-    const renderDetallebaseodal = (detallebaseap, mapaNombres,estatusAceptado) => {
-        // --- PASO 1: Procesar y preparar los datos para ordenar ---
+    const renderDetallebaseodal = (detallebaseap, mapaNombres, estatusAceptado, responsable) => {
+        const totalEventos = Object.keys(detallebaseap).length;
+        const nombreReporte = activeReport === 'ingreso' ? 'Eventos de Ingreso' : 'Eventos de Respuesta';
+        detallebaseodalTitle.innerHTML = `Detalle para ${responsable} <span class="text-base font-normal text-gray-500 ml-4">(${totalEventos} ${nombreReporte})</span>`;
+
         let filasProcesadas = [];
-        for (const [idCompuesto, itemsList] of Object.entries(detallebaseap)) {
-            
+        for (const [eventoKey, data] of Object.entries(detallebaseap)) {
+            const itemsList = data.items;
+            if (!Array.isArray(itemsList)) continue;
+
             let valorGlosadoNum = 0;
             itemsList.forEach(item => {
-                if (item.estatus !== estatusAceptado) {
-                    valorGlosadoNum += item.valor;
+                if (item.estatus1 !== 'ai' && item.estatus1 !== 'ae') {
+                    valorGlosadoNum += item.vr_glosa;
                 }
             });
-            
+
             filasProcesadas.push({
-                idCompuesto: idCompuesto,
+                eventoKey: eventoKey,
                 itemsList: itemsList,
-                valorGlosadoNum: valorGlosadoNum // Guardamos el valor numérico para ordenar
+                valorGlosadoNum: valorGlosadoNum
             });
         }
 
-        // --- PASO 2: Ordenar el array de filas de mayor a menor Valor Glosado ---
         filasProcesadas.sort((a, b) => b.valorGlosadoNum - a.valorGlosadoNum);
-        const valorAceptadoHeader = activeReport === 'ingreso' ? 'Valor levantado por la erp' : 'Valor Aceptado';
         
-        // --- PASO 3: Construir el HTML con los datos ya ordenados ---
+        const valorAceptadoHeader = activeReport === 'ingreso' ? 'Valor levantado por la erp' : 'Valor Aceptado';
         let tableHTML = `
             <table class="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden">
                 <thead class="bg-gray-100 sticky top-0 z-10">
@@ -438,6 +441,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Valor Glosado</th>
                         <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">${valorAceptadoHeader}</th>
                         <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Total Reclamado</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Fecha Glosa</th>
                     </tr>
                 </thead>
                 <tbody>`;
@@ -447,29 +451,27 @@ document.addEventListener('DOMContentLoaded', () => {
         const formatter = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
 
         filasProcesadas.forEach(fila => {
-            const { idCompuesto, itemsList } = fila;
-            const parts = idCompuesto.split('-');
+            const { eventoKey, itemsList } = fila;
+            const parts = eventoKey.split('-');
             const documento = `${parts[0]}${parts[1]}`;
             const codigoTercero = parts[2];
             const nombreTercero = mapaNombres[codigoTercero] || codigoTercero;
+            const fechaGlosa = itemsList.length > 0 ? itemsList[0].fecha_gl : 'N/A';
             
             const totalItems = itemsList.length;
             const desglose = { estatusCounts: {}, valorGlosado: 0.0, valorAceptado: 0.0 };
 
             itemsList.forEach(item => {
-                desglose.estatusCounts[item.estatus] = (desglose.estatusCounts[item.estatus] || 0) + 1;
-                if (item.estatus === estatusAceptado) {
-                    desglose.valorAceptado += item.valor;
+                desglose.estatusCounts[item.estatus1] = (desglose.estatusCounts[item.estatus1] || 0) + 1;
+                if (item.estatus1 === 'ai' || item.estatus1 === 'ae') {
+                    desglose.valorAceptado += item.vr_glosa;
                 } else {
-                    desglose.valorGlosado += item.valor;
+                    desglose.valorGlosado += item.vr_glosa;
                 }
             });
 
             const totalReclamadoFila = desglose.valorGlosado + desglose.valorAceptado;
-            
-            const desgloseStr = Object.entries(desglose.estatusCounts)
-                .map(([est, count]) => `${est.toUpperCase()} (${count})`)
-                .join(', ');
+            const desgloseStr = Object.entries(desglose.estatusCounts).map(([est, count]) => `${est.toUpperCase()} (${count})`).join(', ');
 
             tableHTML += `
                 <tr class="border-b border-gray-200 hover:bg-gray-50 even:bg-gray-50">
@@ -481,6 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap">${formatter.format(desglose.valorGlosado)}</td>
                     <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap">${formatter.format(desglose.valorAceptado)}</td>
                     <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap">${formatter.format(totalReclamadoFila)}</td>
+                    <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap">${fechaGlosa}</td>
                 </tr>`;
 
             totales.items += totalItems;
@@ -499,6 +502,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <th class="py-3 px-4 text-center text-base font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.glosado)}</th>
                     <th class="py-3 px-4 text-center text-base font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.aceptado)}</th>
                     <th class="py-3 px-4 text-center text-base font-montserrat font-bold text-gray-800 uppercase tracking-wider">${formatter.format(totales.reclamado)}</th>
+                    <th class="py-3 px-4"></th>
                 </tr>
             </tfoot>`;
         tableHTML += '</table>';
