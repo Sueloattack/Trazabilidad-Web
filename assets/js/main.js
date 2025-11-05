@@ -69,36 +69,166 @@ document.addEventListener('DOMContentLoaded', () => {
         radicacionButton.classList.remove('opacity-50', 'cursor-not-allowed');
     };
 
+    const getMonthlyRanges = (startDate, endDate) => {
+        const ranges = [];
+        let current = new Date(startDate);
+
+        while (current <= endDate) {
+            let monthEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0);
+
+            ranges.push({
+                start: current.toISOString().slice(0, 10),
+                end: (monthEnd < endDate ? monthEnd : endDate).toISOString().slice(0, 10)
+            });
+
+            // Move to the first day of the next month
+            current = new Date(current.getFullYear(), current.getMonth() + 1, 1);
+        }
+        return ranges;
+    };
+
+    /**
+     * [NUEVO] Agrega los resultados de múltiples consultas mensuales.
+     */
+    const aggregateMonthlyData = (responses) => {
+        if (!responses || responses.length === 0) {
+            return { data: [], detalle_mapa: {} };
+        }
+        if (responses.length === 1) {
+            return responses[0];
+        }
+
+        const aggregatedDataMap = new Map();
+        const finalDetalleMapa = {};
+        const parseCurrency = (str) => parseFloat(String(str).replace(/[^0-9\.-]+/g, '')) || 0;
+
+        for (const res of responses) {
+            if (res.detalle_mapa) {
+                for (const responsable in res.detalle_mapa) {
+                    if (!finalDetalleMapa[responsable]) {
+                        finalDetalleMapa[responsable] = {}; // Initialize as an object
+                    }
+                    Object.assign(finalDetalleMapa[responsable], res.detalle_mapa[responsable]); // Merge objects
+                }
+            }
+
+            if (res.data) {
+                for (const item of res.data) {
+                    const key = item.responsable;
+                    if (!aggregatedDataMap.has(key)) {
+                        const newItem = JSON.parse(JSON.stringify(item)); // Deep copy
+                        // Parse currency strings to numbers for aggregation
+                        newItem.valor_total_glosas = parseCurrency(newItem.valor_total_glosas);
+                        newItem.valor_glosado = parseCurrency(newItem.valor_glosado);
+                        newItem.valor_aceptado = parseCurrency(newItem.valor_aceptado);
+                        newItem.valor_total_items = parseCurrency(newItem.valor_total_items);
+                        if (newItem.desglose_ratificacion) {
+                            for(const estado in newItem.desglose_ratificacion) {
+                                newItem.desglose_ratificacion[estado].valor = parseCurrency(newItem.desglose_ratificacion[estado].valor);
+                            }
+                        }
+                        aggregatedDataMap.set(key, newItem);
+                    } else {
+                        const responsableData = aggregatedDataMap.get(key);
+                        responsableData.cantidad_glosas_ingresadas += item.cantidad_glosas_ingresadas;
+                        responsableData.total_items += item.total_items;
+                        responsableData.valor_total_glosas += parseCurrency(item.valor_total_glosas);
+                        responsableData.valor_glosado += parseCurrency(item.valor_glosado);
+                        responsableData.valor_aceptado += parseCurrency(item.valor_aceptado);
+                        responsableData.valor_total_items += parseCurrency(item.valor_total_items);
+
+                        if (item.desglose_ratificacion) {
+                            for (const estado in item.desglose_ratificacion) {
+                                if (!responsableData.desglose_ratificacion[estado]) {
+                                    responsableData.desglose_ratificacion[estado] = { cantidad_facturas: 0, cantidad: 0, valor: 0.0 };
+                                }
+                                responsableData.desglose_ratificacion[estado].cantidad_facturas += parseInt(item.desglose_ratificacion[estado].cantidad_facturas, 10);
+                                responsableData.desglose_ratificacion[estado].cantidad += parseInt(item.desglose_ratificacion[estado].cantidad, 10);
+                                responsableData.desglose_ratificacion[estado].valor += parseCurrency(item.desglose_ratificacion[estado].valor);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        const finalData = Array.from(aggregatedDataMap.values());
+        const formatter = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
+
+        // Format numbers back to currency strings for rendering
+        finalData.forEach(item => {
+            item.valor_total_glosas = formatter.format(item.valor_total_glosas);
+            item.valor_glosado = formatter.format(item.valor_glosado);
+            item.valor_aceptado = formatter.format(item.valor_aceptado);
+            item.valor_total_items = formatter.format(item.valor_total_items);
+            if (item.desglose_ratificacion) {
+                for(const estado in item.desglose_ratificacion) {
+                    item.desglose_ratificacion[estado].valor = formatter.format(item.desglose_ratificacion[estado].valor);
+                }
+            }
+            // Note: Promedios are not recalculated and will reflect the last month's data.
+            item.promedios.periodo = 'Acumulado';
+        });
+
+        return { data: finalData, detalle_mapa: finalDetalleMapa };
+    };
+
     /**
      * Llama a la API principal para obtener los datos agregados del reporte.
      */
-    const fetchReporte = async (reporte, fechaInicio = '', fechaFin = '') => {
-        disableUI(); // Deshabilitar UI al inicio de la petición
+    const fetchReporte = async (reporte, fechaInicio, fechaFin) => {
+        disableUI();
         dashboardContainer.innerHTML = '<div class="col-span-full text-center text-gray-500 p-8 bg-gray-50 rounded-lg shadow-inner">Cargando datos...</div>';
-        detallesPorResponsable = {}; 
+        detallesPorResponsable = {};
 
         try {
-            const params = new URLSearchParams();
-            if (fechaInicio) params.append('fecha_inicio', fechaInicio);
-            if (fechaFin) params.append('fecha_fin', fechaFin);
-            
-            const url = `api/reporte_${reporte}.php?${params.toString()}`;
+            const startDate = new Date(fechaInicio + 'T00:00:00');
+            const endDate = new Date(fechaFin + 'T00:00:00');
+            const diffTime = Math.abs(endDate - startDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
-            const response = await fetch(url);
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Error en el servidor: ${response.statusText}. Respuesta: ${errorText}`);
+            let responses = [];
+
+            if (diffDays > 31 && (reporte === 'ingreso' || reporte === 'analistas')) {
+                const monthlyRanges = getMonthlyRanges(startDate, endDate);
+                dashboardContainer.innerHTML = `<div class="col-span-full text-center text-gray-500 p-8 bg-gray-50 rounded-lg shadow-inner">Cargando ${monthlyRanges.length} meses...</div>`;
+
+                const fetchPromises = monthlyRanges.map(range => {
+                    const params = new URLSearchParams();
+                    params.append('fecha_inicio', range.start);
+                    params.append('fecha_fin', range.end);
+                    const url = `api/reporte_${reporte}.php?${params.toString()}`;
+                    return fetch(url).then(res => {
+                        if (!res.ok) {
+                            return res.text().then(text => { throw new Error(`Error en sub-consulta: ${text}`) });
+                        }
+                        return res.json();
+                    });
+                });
+
+                responses = await Promise.all(fetchPromises);
+            } else {
+                const params = new URLSearchParams();
+                if (fechaInicio) params.append('fecha_inicio', fechaInicio);
+                if (fechaFin) params.append('fecha_fin', fechaFin);
+                const url = `api/reporte_${reporte}.php?${params.toString()}`;
+                const response = await fetch(url);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Error en el servidor: ${response.statusText}. Respuesta: ${errorText}`);
+                }
+                responses.push(await response.json());
             }
-            const responseData = await response.json();
-            
-            detallesPorResponsable = responseData.detalle_mapa || {};
-            renderContent(responseData, reporte);
+
+            const aggregatedData = aggregateMonthlyData(responses);
+            detallesPorResponsable = aggregatedData.detalle_mapa || {};
+            renderContent(aggregatedData, reporte);
 
         } catch (error) {
             console.error(`Error al obtener el reporte '${reporte}':`, error);
             dashboardContainer.innerHTML = `<div class="col-span-full text-center text-red-600 p-8 bg-red-50 rounded-lg shadow-inner">Error al cargar el reporte.<br><pre>${error.message}</pre></div>`;
         } finally {
-            enableUI(); // Habilitar UI al finalizar la petición
+            enableUI();
         }
     };
     
