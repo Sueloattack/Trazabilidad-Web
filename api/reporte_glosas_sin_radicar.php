@@ -14,7 +14,11 @@ try {
     $fecha_fin_vfp = "{^{$fecha_fin}}";
 
     // 2. CONSULTA
-    $sql = "DISTINCT cab.tercero, cab.fc_serie, cab.fc_docn, det.estatus1, det.fecha_gl, det.gr_docn FROM gema10.d/salud/datos/glo_det det, gema10.d/salud/datos/glo_cab cab WHERE cab.gl_docn = det.gl_docn AND BETWEEN(det.fecha_gl, {$fecha_inicio_vfp}, {$fecha_fin_vfp}) AND (det.estatus1 = 'C1' OR det.estatus1 = 'C2' OR det.estatus1 = 'C3' OR det.estatus1 = 'CO' OR det.estatus1 = 'AI') AND EMPTY(det.fecha_rep)";
+    $sql = "DISTINCT cab.tercero, cab.fc_serie, cab.fc_docn, det.estatus1, det.fecha_gl, det.gr_docn 
+            FROM gema10.d/salud/datos/glo_det det, gema10.d/salud/datos/glo_cab cab 
+            WHERE cab.gl_docn = det.gl_docn AND BETWEEN(det.fecha_gl, {$fecha_inicio_vfp}, {$fecha_fin_vfp}) 
+            AND (det.estatus1 = 'C1' OR det.estatus1 = 'C2' OR det.estatus1 = 'C3' OR det.estatus1 = 'CO' OR det.estatus1 = 'AI') 
+            AND EMPTY(det.fecha_rep)";
     $raw_results = queryApiGema($sql);
 
     if (empty($raw_results)) {
@@ -55,6 +59,7 @@ try {
             $detalle_mapa[$tercero_code][$glosa_key] = [
                 'glosa' => $glosa_key,
                 'tiene_cuenta' => false, // Se actualizará si cualquier item tiene cuenta
+                'gr_docn'      => null, // Inicializar el campo
                 'items' => []
             ];
         }
@@ -62,9 +67,10 @@ try {
         // Añadir el item (estado, fecha) a la glosa
         $detalle_mapa[$tercero_code][$glosa_key]['items'][] = $item_details;
 
-        // Marcar la glosa como 'tiene_cuenta' si al menos uno de sus items la tiene
+        // Marcar la glosa como 'tiene_cuenta' si al menos uno de sus items la tiene y almacenar el valor
         if ($tiene_gr_docn) {
             $detalle_mapa[$tercero_code][$glosa_key]['tiene_cuenta'] = true;
+            $detalle_mapa[$tercero_code][$glosa_key]['gr_docn'] = trim($row['gr_docn']);
         }
     }
 
@@ -100,6 +106,17 @@ try {
             }
         }
     }
+
+    // --- Enriquecer CADA GLOSA con su información de tercero ---
+    foreach ($detalle_mapa as $code => &$glosas) {
+        $nombre = $mapa_nombres[$code] ?? $code;
+        foreach ($glosas as &$glosa_detalle) {
+            $glosa_detalle['tercero_code'] = $code;
+            $glosa_detalle['tercero_nombre'] = $nombre;
+        }
+        unset($glosa_detalle);
+    }
+    unset($glosas);
 
     // --- Enriquecer el resumen con los nombres y reindexar el mapa de detalles ---
     $detalle_mapa_con_nombres = [];

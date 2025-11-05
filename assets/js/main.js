@@ -217,14 +217,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const totalSinCuenta = data.reduce((sum, item) => sum + item.sin_cuenta, 0);
         
         const totalizadorHTML = `
-            <div class="col-span-full grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 rounded-lg shadow-md">
+            <div id="totalizadores-container" class="col-span-full grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div data-filter="total" data-title="Detalle de Glosas Totales" class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 rounded-lg shadow-md text-center cursor-pointer transition-transform hover:scale-105">
                     <h2 class="text-xl font-bold">Total Glosas: ${totalGlosas.toLocaleString('es-CO')}</h2>
                 </div>
-                <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-lg shadow-md">
+                <div data-filter="con_cuenta" data-title="Detalle de Glosas Con Cuenta" class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-lg shadow-md text-center cursor-pointer transition-transform hover:scale-105">
                     <h2 class="text-xl font-bold">Con Cuenta: ${totalConCuenta.toLocaleString('es-CO')}</h2>
                 </div>
-                <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-lg shadow-md">
+                <div data-filter="sin_cuenta" data-title="Detalle de Glosas Sin Cuenta" class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-lg shadow-md text-center cursor-pointer transition-transform hover:scale-105">
                     <h2 class="text-xl font-bold">Sin Cuenta: ${totalSinCuenta.toLocaleString('es-CO')}</h2>
                 </div>
             </div>
@@ -233,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         data.forEach(item => {
             dashboardContainer.innerHTML += `
-                <div class="item-card bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 ease-in-out cursor-pointer border border-gray-200 hover:border-blue-500" data-responsable="${item.tercero_nombre}">
+                <div class="item-card bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 ease-in-out cursor-pointer border border-gray-200 hover:border-blue-500" data-responsable="${item.tercero_nombre}" data-tercero="${item.tercero_code}">
                     <div class="card-header p-4 border-b border-gray-200 bg-gray-50 flex items-center justify-center h-20">
                         <h3 class="text-xl font-montserrat font-semibold text-gray-800 text-center">${item.tercero_nombre}</h3>
                     </div>
@@ -251,7 +251,7 @@ document.addEventListener('DOMContentLoaded', () => {
     /**
      * Muestra el modal y carga los detalles según el tipo de reporte.
      */
-    const fetchDetalles = async (responsable) => {
+    const fetchDetalles = async (responsable, terceroId) => {
         // [NUEVO] Limpiar botón de exportación anterior y añadir el nuevo
         const existingExportBtn = document.getElementById('export-card-btn');
         if (existingExportBtn) {
@@ -287,7 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (activeReport === 'glosas_sin_radicar') {
-            detallebaseodalTitle.textContent = `Glosas sin Radicar para ${responsable}`;
+            detallebaseodalTitle.textContent = `Glosas sin Radicar para ${responsable} (NIT: ${terceroId || 'N/A'})`;
             detallesListDiv.innerHTML = '<div class="text-center text-gray-500 p-8 bg-gray-50 rounded-lg shadow-inner">Cargando detalles...</div>';
             modalDetalles.classList.remove('hidden');
             modalDetalles.classList.add('flex');
@@ -334,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const formatter = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
         
         let tableHTML = `
-            <table class="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <table class="min-w-full bg-white border border-gray-200 rounded-lg">
                 <thead class="bg-gray-100 sticky top-0 z-10">
                     <tr>
                         <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider"></th><!-- Columna para el botón de expandir -->
@@ -555,27 +555,97 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     /**
+     * [NUEVO] Renderiza un modal con el detalle de las glosas para los totalizadores.
+     */
+    const renderTotalizadorDetalleModal = (filterType, title) => {
+        detallebaseodalTitle.textContent = title;
+
+        // 1. Aplanar el mapa de detalles a una sola lista de glosas
+        const todasLasGlosas = Object.values(detallesPorResponsable).flat();
+
+        // 2. Filtrar la lista según el tipo de tarjeta
+        let glosasFiltradas = [];
+        if (filterType === 'total') {
+            glosasFiltradas = todasLasGlosas;
+        } else if (filterType === 'con_cuenta') {
+            glosasFiltradas = todasLasGlosas.filter(g => g.tiene_cuenta);
+        } else if (filterType === 'sin_cuenta') {
+            glosasFiltradas = todasLasGlosas.filter(g => !g.tiene_cuenta);
+        }
+
+        // 3. Construir la tabla HTML
+        let tableHTML = `
+            <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+                <thead class="bg-gray-100 sticky top-0 z-10">
+                    <tr>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">No.</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Glosa</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">ERP (Entidad)</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Estados Pendientes</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Fecha contestación</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Cuenta de cobro</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+        let rowNum = 1;
+        glosasFiltradas.forEach(glosa => {
+            const tieneCuenta = glosa.tiene_cuenta;
+            const rowClass = tieneCuenta ? 'bg-green-50 hover:bg-green-100' : 'bg-yellow-50 hover:bg-yellow-100';
+            const estadosStr = glosa.items.map(item => item.estado).join(', ');
+            const fechasStr = glosa.items.map(item => item.fecha_gl).join(', ');
+
+            tableHTML += `
+                <tr class="border-b border-gray-200 ${rowClass}">
+                    <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap">${rowNum++}</td>
+                    <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap">${glosa.glosa}</td>
+                    <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap">${glosa.tercero_nombre || 'N/A'}</td>
+                    <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap font-semibold">${estadosStr}</td>
+                    <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap">${fechasStr}</td>
+                    <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap">${tieneCuenta ? glosa.gr_docn : 'Sin cuenta de cobro'}</td>
+                </tr>`;
+        });
+
+        tableHTML += '</tbody></table>';
+        detallesListDiv.innerHTML = tableHTML;
+
+        // 4. Mostrar el modal
+        modalDetalles.classList.remove('hidden');
+        modalDetalles.classList.add('flex');
+    };
+
+    /**
      * [NUEVO] Renderiza el contenido del modal para el reporte de Facturas sin Radicar.
      */
     const renderGlosasSinRadicarDetalleModal = (glosas) => {
         let tableHTML = `
-            <table class="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <table class="min-w-full bg-white border border-gray-200 rounded-lg">
                 <thead class="bg-gray-100 sticky top-0 z-10">
                     <tr>
                         <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">No.</th>
                         <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Glosa</th>
                         <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Estados Pendientes</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Fecha contestación</th>
+                        <th class="py-3 px-4 text-center text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Cuenta de cobro</th>
                     </tr>
                 </thead>
                 <tbody>`;
 
         let rowNum = 1;
         glosas.forEach(glosa => {
+            const tieneCuenta = glosa.tiene_cuenta;
+            const rowClass = tieneCuenta ? 'bg-green-50 hover:bg-green-100' : 'bg-yellow-50 hover:bg-yellow-100';
+            
+            const estadosStr = glosa.items.map(item => item.estado).join(', ');
+            const fechasStr = glosa.items.map(item => item.fecha_gl).join(', ');
+
             tableHTML += `
-                <tr class="border-b border-gray-200 hover:bg-gray-50 even:bg-gray-50">
+                <tr class="border-b border-gray-200 ${rowClass}">
                     <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap">${rowNum++}</td>
                     <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap">${glosa.glosa}</td>
-                    <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap font-semibold">${glosa.items.map(item => `${item.estado} (${item.fecha_gl})`).join(', ')}</td>
+                    <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap font-semibold">${estadosStr}</td>
+                    <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap">${fechasStr}</td>
+                    <td class="py-2 px-4 text-center text-base text-gray-800 whitespace-nowrap">${tieneCuenta ? glosa.gr_docn : 'Sin cuenta de cobro'}</td>
                 </tr>`;
         });
 
@@ -639,9 +709,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Event listener para abrir el modal de detalles al hacer clic en una tarjeta.
     dashboardContainer.addEventListener('click', (e) => {
+        // [NUEVO] Manejador para las tarjetas de totalizadores
+        const totalizadorCard = e.target.closest('[data-filter]');
+        if (totalizadorCard) {
+            const filter = totalizadorCard.dataset.filter;
+            const title = totalizadorCard.dataset.title;
+            renderTotalizadorDetalleModal(filter, title);
+            return; // Detener para no ejecutar el código de abajo
+        }
+
+        // Manejador para las tarjetas de detalle por entidad
         const card = e.target.closest('.item-card');
         if (card && card.dataset.responsable) {
-            fetchDetalles(card.dataset.responsable);
+            fetchDetalles(card.dataset.responsable, card.dataset.tercero); // Pasar también el NIT
         }
     });
 
