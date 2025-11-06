@@ -87,10 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return ranges;
     };
 
-    /**
-     * [NUEVO] Agrega los resultados de múltiples consultas mensuales.
-     */
-    const aggregateMonthlyData = (responses) => {
+    const aggregateMonthlyData = (responses, divisor = 1, periodoType = "Diario") => {
         if (!responses || responses.length === 0) {
             return { data: [], detalle_mapa: {} };
         }
@@ -100,7 +97,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const aggregatedDataMap = new Map();
         const finalDetalleMapa = {};
-        const parseCurrency = (str) => parseFloat(String(str).replace(/[^0-9\.-]+/g, '')) || 0;
+        // Updated parseCurrency to handle locale-specific formatting (e.g., thousands dot, decimal comma)
+        const parseCurrency = (str) => {
+            let cleanStr = String(str).replace(/[^0-9.,-]+/g, ''); // Allow comma and dot
+            cleanStr = cleanStr.replace(/\./g, ''); // Remove thousands separator (dots)
+            cleanStr = cleanStr.replace(/,/g, '.'); // Replace decimal comma with dot
+            return parseFloat(cleanStr) || 0;
+        };
 
         for (const res of responses) {
             if (res.detalle_mapa) {
@@ -108,7 +111,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!finalDetalleMapa[responsable]) {
                         finalDetalleMapa[responsable] = {}; // Initialize as an object
                     }
-                    Object.assign(finalDetalleMapa[responsable], res.detalle_mapa[responsable]); // Merge objects
+                    // Iterate through the eventoKeys for this responsable in the current month's response
+                    for (const eventoKey in res.detalle_mapa[responsable]) {
+                        if (!finalDetalleMapa[responsable][eventoKey]) {
+                            // If this eventoKey doesn't exist yet, just assign it
+                            finalDetalleMapa[responsable][eventoKey] = res.detalle_mapa[responsable][eventoKey];
+                        } else {
+                            // If it exists, concatenate the 'items' arrays
+                            finalDetalleMapa[responsable][eventoKey].items = finalDetalleMapa[responsable][eventoKey].items.concat(res.detalle_mapa[responsable][eventoKey].items);
+                        }
+                    }
                 }
             }
 
@@ -117,7 +129,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     const key = item.responsable;
                     if (!aggregatedDataMap.has(key)) {
                         const newItem = JSON.parse(JSON.stringify(item)); // Deep copy
-                        // Parse currency strings to numbers for aggregation
+                        // Parse numbers and currency strings to numbers for initial setting
+                        newItem.cantidad_glosas_ingresadas = parseInt(String(newItem.cantidad_glosas_ingresadas).replace(/[^0-9]/g, ''), 10) || 0;
+                        newItem.total_items = parseInt(String(newItem.total_items).replace(/[^0-9]/g, ''), 10) || 0;
                         newItem.valor_total_glosas = parseCurrency(newItem.valor_total_glosas);
                         newItem.valor_glosado = parseCurrency(newItem.valor_glosado);
                         newItem.valor_aceptado = parseCurrency(newItem.valor_aceptado);
@@ -130,8 +144,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         aggregatedDataMap.set(key, newItem);
                     } else {
                         const responsableData = aggregatedDataMap.get(key);
-                        responsableData.cantidad_glosas_ingresadas += item.cantidad_glosas_ingresadas;
-                        responsableData.total_items += item.total_items;
+                        responsableData.cantidad_glosas_ingresadas += parseInt(String(item.cantidad_glosas_ingresadas).replace(/[^0-9]/g, ''), 10) || 0;
+                        responsableData.total_items += parseInt(String(item.total_items).replace(/[^0-9]/g, ''), 10) || 0;
                         responsableData.valor_total_glosas += parseCurrency(item.valor_total_glosas);
                         responsableData.valor_glosado += parseCurrency(item.valor_glosado);
                         responsableData.valor_aceptado += parseCurrency(item.valor_aceptado);
@@ -142,8 +156,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 if (!responsableData.desglose_ratificacion[estado]) {
                                     responsableData.desglose_ratificacion[estado] = { cantidad_facturas: 0, cantidad: 0, valor: 0.0 };
                                 }
-                                responsableData.desglose_ratificacion[estado].cantidad_facturas += parseInt(item.desglose_ratificacion[estado].cantidad_facturas, 10);
-                                responsableData.desglose_ratificacion[estado].cantidad += parseInt(item.desglose_ratificacion[estado].cantidad, 10);
+                                responsableData.desglose_ratificacion[estado].cantidad_facturas += parseInt(String(item.desglose_ratificacion[estado].cantidad_facturas).replace(/[^0-9]/g, ''), 10) || 0;
+                                responsableData.desglose_ratificacion[estado].cantidad += parseInt(String(item.desglose_ratificacion[estado].cantidad).replace(/[^0-9]/g, ''), 10) || 0;
                                 responsableData.desglose_ratificacion[estado].valor += parseCurrency(item.desglose_ratificacion[estado].valor);
                             }
                         }
@@ -153,23 +167,86 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const finalData = Array.from(aggregatedDataMap.values());
-        const formatter = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
+
+        // Define a formatter for currency that removes .00 for whole numbers
+        const currencyFormatter = new Intl.NumberFormat('es-CO', {
+            style: 'currency',
+            currency: 'COP',
+            minimumFractionDigits: 0, // Allow 0 decimal places
+            maximumFractionDigits: 2  // Allow up to 2 decimal places
+        });
+
+        // Define a formatter for quantities that removes .00 for whole numbers
+        const quantityFormatter = new Intl.NumberFormat('es-CO', {
+            minimumFractionDigits: 0, // Allow 0 decimal places
+            maximumFractionDigits: 2  // Allow up to 2 decimal places
+        });
+
+        // Recalculate cantidad_glosas_ingresadas and total_items based on the aggregated finalDetalleMapa
+        finalData.forEach(item => {
+            const responsableDetalles = finalDetalleMapa[item.responsable];
+            let totalGlosasIngresadasCalculated = 0; // This will be the count of unique eventoKeys
+            let totalItemsCalculated = 0; // This will be the sum of items.length for all eventoKeys
+
+            if (responsableDetalles) {
+                totalGlosasIngresadasCalculated = Object.keys(responsableDetalles).length; // Count of unique eventoKeys
+
+                for (const eventoKey in responsableDetalles) {
+                    if (responsableDetalles[eventoKey] && Array.isArray(responsableDetalles[eventoKey].items)) {
+                        totalItemsCalculated += responsableDetalles[eventoKey].items.length; // Sum of individual glosses
+                    }
+                }
+            }
+            item.cantidad_glosas_ingresadas = totalGlosasIngresadasCalculated;
+            item.total_items = totalItemsCalculated; // Ensure total_items is also correctly derived
+
+            // Recalculate promedios based on aggregated totals and divisor
+            if (divisor > 0) {
+                const totalGlosas = item.cantidad_glosas_ingresadas;
+                const totalValor = parseCurrency(item.valor_total_glosas); // Parse back to number for calculation
+
+                let formattedPromedioCantidad;
+                let formattedPromedioValor;
+
+                // The logic for daily vs monthly/annual formatting is now unified using the formatters
+                formattedPromedioCantidad = quantityFormatter.format(totalGlosas / divisor);
+                formattedPromedioValor = currencyFormatter.format(totalValor / divisor);
+
+                console.log(`aggregateMonthlyData: Assigning promedios.periodo as ${periodoType} for item ${item.responsable}`);
+                item.promedios = {
+                    periodo: periodoType,
+                    promedio_cantidad: formattedPromedioCantidad,
+                    promedio_valor: formattedPromedioValor
+                };
+            } else {
+                item.promedios = null; // Or an empty object if no months
+            }
+        });
+
+        // The main formatter for other values (already defined as currencyFormatter)
+        // We can reuse currencyFormatter for item.valor_total_glosas etc.
+        // The existing formatter variable is named 'formatter', let's rename it to 'mainCurrencyFormatter' for clarity
+        const mainCurrencyFormatter = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 2 });
+
 
         // Format numbers back to currency strings for rendering
         finalData.forEach(item => {
-            item.valor_total_glosas = formatter.format(item.valor_total_glosas);
-            item.valor_glosado = formatter.format(item.valor_glosado);
-            item.valor_aceptado = formatter.format(item.valor_aceptado);
-            item.valor_total_items = formatter.format(item.valor_total_items);
+            item.valor_total_glosas = mainCurrencyFormatter.format(item.valor_total_glosas);
+            item.valor_glosado = mainCurrencyFormatter.format(item.valor_glosado);
+            item.valor_aceptado = mainCurrencyFormatter.format(item.valor_aceptado);
+            item.valor_total_items = mainCurrencyFormatter.format(item.valor_total_items);
             if (item.desglose_ratificacion) {
                 for(const estado in item.desglose_ratificacion) {
-                    item.desglose_ratificacion[estado].valor = formatter.format(item.desglose_ratificacion[estado].valor);
+                    item.desglose_ratificacion[estado].valor = mainCurrencyFormatter.format(item.desglose_ratificacion[estado].valor);
                 }
             }
-            // Note: Promedios are not recalculated and will reflect the last month's data.
-            item.promedios.periodo = 'Acumulado';
+            // Promedios values are already formatted within the loop above, so this part can be removed or adjusted if needed.
+            // if (item.promedios && item.promedios.promedio_valor) {
+            //     item.promedios.promedio_valor = formatter.format(parseFloat(item.promedios.promedio_valor));
+            // }
         });
 
+        console.log('aggregateMonthlyData: Returning aggregated data. First item promedios.periodo:', finalData[0]?.promedios?.periodo);
         return { data: finalData, detalle_mapa: finalDetalleMapa };
     };
 
@@ -188,9 +265,36 @@ document.addEventListener('DOMContentLoaded', () => {
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
             let responses = [];
+            let divisor = 1;
+            let periodoType = "Diario";
 
-            if (diffDays > 31 && (reporte === 'ingreso' || reporte === 'analistas')) {
-                const monthlyRanges = getMonthlyRanges(startDate, endDate);
+            const monthlyRanges = getMonthlyRanges(startDate, endDate);
+            const diffMonths = monthlyRanges.length;
+
+            if (diffMonths <= 1) { // This covers single calendar month or less than a month
+                divisor = diffDays;
+                periodoType = "Diario";
+
+                // Fetch single month data
+                const params = new URLSearchParams();
+                if (fechaInicio) params.append('fecha_inicio', fechaInicio);
+                if (fechaFin) params.append('fecha_fin', fechaFin);
+                const url = `api/reporte_${reporte}.php?${params.toString()}`;
+                const response = await fetch(url);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Error en el servidor: ${response.statusText}. Respuesta: ${errorText}`);
+                }
+                responses.push(await response.json());
+
+            } else { // More than one month (diffMonths > 1)
+                if (diffMonths <= 12) { // Up to a year
+                    divisor = diffMonths;
+                    periodoType = "Mensual";
+                } else { // More than a year
+                    divisor = Math.ceil(diffMonths / 12); // Approximate years
+                    periodoType = "Anual";
+                }
                 dashboardContainer.innerHTML = `<div class="col-span-full text-center text-gray-500 p-8 bg-gray-50 rounded-lg shadow-inner">Cargando ${monthlyRanges.length} meses...</div>`;
 
                 const fetchPromises = monthlyRanges.map(range => {
@@ -207,22 +311,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 responses = await Promise.all(fetchPromises);
-            } else {
-                const params = new URLSearchParams();
-                if (fechaInicio) params.append('fecha_inicio', fechaInicio);
-                if (fechaFin) params.append('fecha_fin', fechaFin);
-                const url = `api/reporte_${reporte}.php?${params.toString()}`;
-                const response = await fetch(url);
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`Error en el servidor: ${response.statusText}. Respuesta: ${errorText}`);
-                }
-                responses.push(await response.json());
             }
 
-            const aggregatedData = aggregateMonthlyData(responses);
-            detallesPorResponsable = aggregatedData.detalle_mapa || {};
-            renderContent(aggregatedData, reporte);
+            const aggregatedData = aggregateMonthlyData(responses, divisor, periodoType);
+
+            // Create a deep copy of aggregatedData before further processing and rendering
+            const clonedAggregatedData = JSON.parse(JSON.stringify(aggregatedData));
+
+            detallesPorResponsable = clonedAggregatedData.detalle_mapa || {};
+            renderContent(clonedAggregatedData, reporte);
 
         } catch (error) {
             console.error(`Error al obtener el reporte '${reporte}':`, error);
@@ -241,6 +338,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!responseData || !responseData.data || responseData.data.length === 0) {
             dashboardContainer.innerHTML += `<div class="col-span-full text-center text-gray-500 p-8 bg-gray-50 rounded-lg shadow-inner">No se encontraron datos para el reporte de '${reporte}' en el período seleccionado.</div>`;
         } else {
+            console.log('renderContent: Data received. First item promedios.periodo:', responseData.data[0]?.promedios?.periodo);
             switch (reporte) {
                 case 'ingreso':
                 case 'analistas':
@@ -284,12 +382,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p class="flex justify-between text-base text-gray-700"><span>Valor Total Ingresado:</span><strong class="font-semibold text-gray-900">${item.valor_total_glosas}</strong></p>
                     </div>
                     <hr class="border-gray-200 mx-4">
+                    ${item.promedios ? `
                     <div class="p-4 space-y-3">
                         <h4 class="text-xs font-montserrat font-medium text-gray-500 uppercase tracking-wider">Promedios (${item.promedios.periodo})</h4>
                         <p class="flex justify-between text-base text-gray-700"><span>Promedio Cantidad:</span><strong class="font-semibold text-gray-900">${item.promedios.promedio_cantidad}</strong></p>
                         <p class="flex justify-between text-base text-gray-700"><span>Promedio Valor:</span><strong class="font-semibold text-gray-900">${item.promedios.promedio_valor}</strong></p>
                     </div>
                     <hr class="border-gray-200 mx-4">
+                    ` : ''}
                     <div class="p-4 space-y-3">
                         <h4 class="text-xs font-montserrat font-medium text-gray-500 uppercase tracking-wider">Desglose por Ratificación</h4>
                         <div class="space-y-2">${desgloseHTML}</div>
